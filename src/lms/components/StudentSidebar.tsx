@@ -1,22 +1,21 @@
 import {
   LayoutDashboard,
   BookOpen,
-  ClipboardList,
-  BookMarked,
   CalendarDays,
   MessageSquare,
-  HelpCircle,
-  Megaphone,
+  Users,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router";
 
 const mainItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/student/dashboard" },
+  { label: "My Courses", icon: BookOpen, href: "/student/courses" },
   { label: "Calendar", icon: CalendarDays, href: "/student/calendar" },
 ];
 
 const communicationItems = [
-  { label: "Communications", icon: Megaphone, href: "/student/communications", badge: 2 },
+  { label: "Messages", icon: MessageSquare, href: "/student/communications", badge: 2 },
+  { label: "Groups", icon: Users, href: "/student/groups" },
 ];
 
 interface NavItemProps {
@@ -81,9 +80,6 @@ export function StudentSidebar() {
   const location = useLocation();
 
   const isActive = (href: string) => {
-    if (href === "/student/courses") {
-      return location.pathname === href || location.pathname.startsWith("/student/courses/");
-    }
     return location.pathname === href;
   };
 
@@ -102,7 +98,6 @@ export function StudentSidebar() {
       </nav>
 
       <nav className="flex flex-col gap-1">
-        <SectionLabel>Communication</SectionLabel>
         {communicationItems.map((item) => (
           <NavItem
             key={item.href}

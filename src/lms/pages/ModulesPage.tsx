@@ -7,7 +7,6 @@ import {
   Video, BookMarked, CalendarDays,
 } from "lucide-react";
 import { AlmsHeader } from "../components/AlmsHeader";
-import { ProfileBanner } from "../components/ProfileBanner";
 import { InstructorSidebar } from "../components/InstructorSidebar";
 import { COURSES } from "../data/courses";
 import { courseShortWithTracks, courseTitleWithTracks } from "../lib/courseLabels";
@@ -409,8 +408,9 @@ export function ModulesPage() {
           { label: courseLabel, href: `/instructor/courses/${courseId}` },
           { label: "Modules" },
         ]}
+        instituteName="SOMDA INSTITUTE OF PROFESSIONAL STUDIES"
+        showAvatar
       />
-      <ProfileBanner name="Prof Mensah Oduro" role="Instructor" />
 
       <div className="flex-1 flex gap-6 px-6 py-6 max-w-[1200px] mx-auto w-full">
         <InstructorSidebar />

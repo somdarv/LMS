@@ -22,7 +22,6 @@ import {
   Zap,
 } from "lucide-react";
 import { AlmsHeader } from "../components/AlmsHeader";
-import { ProfileBanner } from "../components/ProfileBanner";
 import { InstructorSidebar } from "../components/InstructorSidebar";
 import { COURSES } from "../data/courses";
 import { courseSelectLabel } from "../lib/courseLabels";
@@ -146,8 +145,7 @@ export function AssignmentsPage() {
 
   return (
     <div className="min-h-screen bg-[#f5f6f8] flex flex-col">
-      <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "Assignments & Quizzes" }]} />
-      <ProfileBanner name="Prof Mensah Oduro" role="Instructor" />
+      <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "Assignments & Quizzes" }]} instituteName="SOMDA INSTITUTE OF PROFESSIONAL STUDIES" showAvatar />
 
       <div className="flex-1 flex gap-6 px-6 py-6 max-w-[1200px] mx-auto w-full">
         <InstructorSidebar />
@@ -171,14 +169,6 @@ export function AssignmentsPage() {
               >
                 <PlusCircle size={15} strokeWidth={1.8} />
                 Create Quiz
-              </button>
-              <button
-                onClick={() => navigate("/instructor/create-assignment")}
-                className="flex items-center gap-2 px-4 h-[42px] bg-[#0a1628] hover:bg-[#0d1e35] transition-colors"
-                style={{ ...S, fontWeight: 600, fontSize: "13px", color: "white" }}
-              >
-                <PlusCircle size={15} strokeWidth={1.8} />
-                Create Assignment
               </button>
             </div>
           </div>
@@ -329,9 +319,6 @@ export function AssignmentsPage() {
                                 <Eye size={14} className="text-[#6c6c6c]" />
                               </button>
                             )}
-                            <button onClick={() => navigate("/instructor/create-assignment")} className="p-1.5 hover:bg-gray-100 transition-colors" title="Edit">
-                              <Edit2 size={14} className="text-[#6c6c6c]" />
-                            </button>
                             <button onClick={() => handleDownload(a.title)} className="p-1.5 hover:bg-gray-100 transition-colors" title="Download">
                               <Download size={14} className="text-[#6c6c6c]" />
                             </button>
@@ -349,13 +336,6 @@ export function AssignmentsPage() {
                 <div className="py-16 text-center">
                   <ClipboardList size={36} className="text-gray-200 mx-auto mb-3" />
                   <p style={{ ...S, fontSize: "14px", color: "#6c6c6c" }}>No assignments match your filters.</p>
-                  <button
-                    onClick={() => navigate("/instructor/create-assignment")}
-                    className="mt-4 flex items-center gap-2 mx-auto px-4 py-2 bg-[#0a1628] text-white hover:bg-[#0d1e35] transition-colors"
-                    style={{ ...S, fontSize: "13px", fontWeight: 600 }}
-                  >
-                    <PlusCircle size={14} /> Create Assignment
-                  </button>
                 </div>
               )}
             </div>

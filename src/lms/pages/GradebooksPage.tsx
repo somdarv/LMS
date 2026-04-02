@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import type { GroupSubmissionMeta } from "../data/groups";
 import { AlmsHeader } from "../components/AlmsHeader";
-import { ProfileBanner } from "../components/ProfileBanner";
 import { InstructorSidebar } from "../components/InstructorSidebar";
 
 const S = { fontFamily: "Inter, sans-serif" };
@@ -417,8 +416,7 @@ function PageShell({
 }) {
   return (
     <div className="min-h-screen bg-[#f5f6f8] flex flex-col">
-      <AlmsHeader breadcrumb={breadcrumb.map(b => ({ label: b.label }))} />
-      <ProfileBanner name="Prof Mensah Oduro" role="Instructor" />
+      <AlmsHeader breadcrumb={breadcrumb.map(b => ({ label: b.label }))} instituteName="SOMDA INSTITUTE OF PROFESSIONAL STUDIES" showAvatar />
       <div className="flex-1 flex gap-6 px-6 py-6 max-w-[1200px] mx-auto w-full">
         <InstructorSidebar />
         <main className="flex-1 min-w-0 flex flex-col gap-5">

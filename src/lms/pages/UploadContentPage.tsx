@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import { AlmsHeader } from "../components/AlmsHeader";
 import { InstructorSidebar } from "../components/InstructorSidebar";
-import { ProfileBanner } from "../components/ProfileBanner";
 import { COURSES } from "../data/courses";
 import { courseSelectLabel, courseTitleWithTracks } from "../lib/courseLabels";
 
@@ -113,8 +112,7 @@ export function UploadContentPage() {
   if (published) {
     return (
       <div className="min-h-screen bg-[#f5f6f8] flex flex-col">
-        <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "My Courses" }, { label: "Upload Content" }]} />
-        <ProfileBanner name="Prof Mensah Oduro" role="Instructor" />
+        <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "My Courses" }, { label: "Upload Content" }]} instituteName="SOMDA INSTITUTE OF PROFESSIONAL STUDIES" showAvatar />
         <div className="flex-1 flex gap-6 px-6 py-6 max-w-[1200px] mx-auto w-full">
           <InstructorSidebar />
           <main className="flex-1 flex items-center justify-center">
@@ -159,8 +157,7 @@ export function UploadContentPage() {
 
   return (
     <div className="min-h-screen bg-[#f5f6f8] flex flex-col">
-      <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "My Courses", href: "/instructor/courses" }, { label: "Upload Content" }]} />
-      <ProfileBanner name="Prof Mensah Oduro" role="Instructor" />
+      <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "My Courses", href: "/instructor/courses" }, { label: "Upload Content" }]} instituteName="SOMDA INSTITUTE OF PROFESSIONAL STUDIES" showAvatar />
 
       <div className="flex-1 flex gap-6 px-6 py-6 max-w-[1200px] mx-auto w-full">
         <InstructorSidebar />

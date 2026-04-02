@@ -74,7 +74,7 @@ function Frame3() {
 function Group16() {
   return (
     <div className="absolute contents left-[72px] top-[20px]">
-      <p className="absolute font-['Inter:Bold',sans-serif] font-bold leading-[33.633px] left-[109.84px] not-italic text-[#faf8f5] text-[22.422px] top-[20px]">ALMS</p>
+      <p className="absolute font-['Inter:Bold',sans-serif] font-bold leading-[33.633px] left-[109.84px] not-italic text-[#faf8f5] text-[22.422px] top-[20px]">SOMDA INSTITUTE OF PROFESSIONAL STUDIES</p>
       <Frame3 />
     </div>
   );

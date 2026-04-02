@@ -14,7 +14,6 @@ import {
   PlayCircle,
 } from "lucide-react";
 import { AlmsHeader } from "../components/AlmsHeader";
-import { ProfileBanner } from "../components/ProfileBanner";
 import { InstructorSidebar } from "../components/InstructorSidebar";
 
 const responsibilities = [
@@ -66,8 +65,7 @@ export function RoleAcceptancePage() {
 
   return (
     <div className="min-h-screen bg-[#f5f6f8] flex flex-col">
-      <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "Dashboard" }]} />
-      <ProfileBanner name="Prof Mensah Oduro" role="Instructor" />
+      <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "Dashboard" }]} instituteName="SOMDA INSTITUTE OF PROFESSIONAL STUDIES" showAvatar />
 
       <div className="flex-1 flex gap-6 px-6 py-6 max-w-[1200px] mx-auto w-full">
         {/* Sidebar */}

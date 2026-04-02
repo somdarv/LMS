@@ -25,6 +25,7 @@ import {
   Crown,
   LogIn,
   Shield,
+  Search,
 } from "lucide-react";
 import { AlmsHeader } from "../components/AlmsHeader";
 import { CourseSidebar, CourseTab } from "../components/CourseSidebar";
@@ -33,6 +34,7 @@ import { getStudentEnrollmentCohort } from "../data/studentEnrollments";
 import { studentCourseTitle } from "../lib/courseLabels";
 import { useLMS } from "../context/LMSContext";
 import { getCourseGroups, findStudentGroup, type Group } from "../data/groups";
+import { getCourseStudents } from "../data/students";
 
 // ─── Assignment / Quiz Types ────────────────────────────────────────────────
 
@@ -52,6 +54,9 @@ interface CourseAssignment {
   feedback?: string;
   submittedAt?: string;
   fileName?: string;
+  allowResubmit?: boolean;
+  attempts?: number;
+  maxAttempts?: number;
 }
 
 interface CourseQuiz {
@@ -83,6 +88,7 @@ const COURSE_ASSIGNMENTS: Record<number, CourseAssignment[]> = {
   ],
   2: [
     { id: 201, title: "Partnership Dissolution Exercise", instructions: "Complete the partnership dissolution workings for the given scenario. Show all journal entries, realisation account, and partner capital accounts.", dueDate: "Mar 22, 2026", maxPoints: 60, submissionType: "file", status: "Not Started", week: 2 },
+    { id: 206, title: "Resubmission Demo: Consolidation Working", instructions: "Upload your consolidation working (any format). After submitting, you can resubmit an improved version for demo purposes.", dueDate: "Mar 28, 2026", maxPoints: 20, submissionType: "file", status: "Submitted", week: 3, allowResubmit: true, attempts: 1, maxAttempts: 3, submittedAt: "Mar 18, 2026", fileName: "Consolidation_Working_v1.pdf" },
     { id: 202, title: "Company Accounts Exercise", instructions: "Prepare a full set of company accounts including statement of financial position and income statement for the given trial balance.", dueDate: "Feb 22, 2026", maxPoints: 60, submissionType: "file", status: "Graded", week: 1, grade: 52, feedback: "Good understanding of share capital and reserves. Review the treatment of inter-company balances.", submittedAt: "Feb 22, 2026", fileName: "CompanyAccounts_KojoManu.pdf" },
   ],
   3: [
@@ -110,8 +116,12 @@ const COURSE_QUIZZES: Record<number, CourseQuiz[]> = {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-const isActive = (s: WorkStatus) => s === "Not Started" || s === "In Progress";
-const isHistory = (s: WorkStatus) => s === "Submitted" || s === "Graded";
+const isActive = (a: CourseAssignment) =>
+  a.status === "Not Started" ||
+  a.status === "In Progress" ||
+  (a.status === "Submitted" && !!a.allowResubmit);
+const isHistory = (a: CourseAssignment) =>
+  a.status === "Graded" || (a.status === "Submitted" && !a.allowResubmit);
 
 // ─── Component ─────────────────────────���────────────────────────────────────
 
@@ -131,6 +141,7 @@ export function StudentCourseDetailPage() {
     courseModules.length > 0 ? [courseModules[0].id] : []
   );
   const [activeTab, setActiveTab] = useState<CourseTab>("overview");
+  const [communicationsSubTab, setCommunicationsSubTab] = useState<"announcements" | "discussions">("announcements");
   const [viewingItem, setViewingItem] = useState<{ type: string; title: string; url?: string } | null>(null);
   const [completed, setCompleted] = useState<Set<string>>(new Set());
 
@@ -141,6 +152,8 @@ export function StudentCourseDetailPage() {
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [justSubmitted, setJustSubmitted] = useState(false);
+  const [isResubmitting, setIsResubmitting] = useState(false);
+  const [lastSubmitWasResubmission, setLastSubmitWasResubmission] = useState(false);
 
   // Quiz detail state
   const [selectedQuiz, setSelectedQuiz] = useState<CourseQuiz | null>(null);
@@ -154,6 +167,13 @@ export function StudentCourseDetailPage() {
   );
   const handleJoinGroup = (group: Group) => setMyGroup(group);
 
+  const enrolledStudents = getCourseStudents(courseId, cohort as "Weekday" | "Weekend" | "All");
+
+  // Students tab state
+  const [studentSearch, setStudentSearch] = useState("");
+  const [showAllStudents, setShowAllStudents] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+
   if (!course) {
     return (
       <div className="min-h-screen bg-[#f5f6f8] flex items-center justify-center">
@@ -164,10 +184,10 @@ export function StudentCourseDetailPage() {
 
   const assignments = COURSE_ASSIGNMENTS[courseId] || [];
   const quizzes = COURSE_QUIZZES[courseId] || [];
-  const activeAssignments = assignments.filter((a) => isActive(a.status));
-  const historyAssignments = assignments.filter((a) => isHistory(a.status));
-  const activeQuizzes = quizzes.filter((q) => isActive(q.status));
-  const historyQuizzes = quizzes.filter((q) => isHistory(q.status));
+  const activeAssignments = assignments.filter((a) => isActive(a));
+  const historyAssignments = assignments.filter((a) => isHistory(a));
+  const activeQuizzes = quizzes.filter((q) => q.status === "Not Started" || q.status === "In Progress");
+  const historyQuizzes = quizzes.filter((q) => q.status === "Graded" || q.status === "Submitted");
 
   const toggleModule = (id: string) => {
     setExpandedModules((prev) =>
@@ -198,10 +218,23 @@ export function StudentCourseDetailPage() {
   };
 
   const handleSubmitAssignment = () => {
+    const submittingAsResubmission = isResubmitting;
     setSubmitting(true);
     setTimeout(() => {
+      setSelectedAssignment((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          status: "Submitted",
+          fileName: uploadedFile || prev.fileName,
+          submittedAt: new Date().toLocaleDateString(),
+          attempts: (prev.attempts ?? 0) + 1,
+        };
+      });
       setSubmitting(false);
+      setLastSubmitWasResubmission(submittingAsResubmission);
       setJustSubmitted(true);
+      setIsResubmitting(false);
       setShowSubmitConfirm(false);
     }, 1400);
   };
@@ -212,6 +245,8 @@ export function StudentCourseDetailPage() {
     setUploadedFile(null);
     setShowSubmitConfirm(false);
     setJustSubmitted(false);
+    setIsResubmitting(false);
+    setLastSubmitWasResubmission(false);
   };
 
   // ─── Tab config ─────────────────────────────────────────────────────────
@@ -252,7 +287,6 @@ export function StudentCourseDetailPage() {
           courseName={courseTitle}
           courseCode={course.code}
           backUrl="/student/courses"
-          hideItems={["students"]}
           counts={{
             content: totalItems,
             assignments: assignments.length,
@@ -456,8 +490,8 @@ export function StudentCourseDetailPage() {
           {/* ═════════════════════════════════════════════════════��══════ */}
           {activeTab === "grades" && (() => {
             const courseGrades = [
-              ...assignments.filter((a) => !isActive(a.status)).map((a) => ({ id: `a-${a.id}`, item: a, assignment: a.title, type: "Assignment", grade: a.grade ?? null, maxPoints: a.maxPoints, status: a.status, date: a.dueDate, feedback: a.feedback })),
-              ...quizzes.filter((q) => !isActive(q.status)).map((q) => ({ id: `q-${q.id}`, item: q, assignment: q.title, type: "Quiz", grade: q.grade ?? null, maxPoints: q.maxPoints, status: q.status, date: q.dueDate, feedback: q.feedback }))
+              ...assignments.filter((a) => !isActive(a)).map((a) => ({ id: `a-${a.id}`, item: a, assignment: a.title, type: "Assignment", grade: a.grade ?? null, maxPoints: a.maxPoints, status: a.status, date: a.dueDate, feedback: a.feedback })),
+              ...quizzes.filter((q) => q.status === "Graded" || q.status === "Submitted").map((q) => ({ id: `q-${q.id}`, item: q, assignment: q.title, type: "Quiz", grade: q.grade ?? null, maxPoints: q.maxPoints, status: q.status, date: q.dueDate, feedback: q.feedback }))
             ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
             const gradedItems = courseGrades.filter((g) => g.status === "Graded" && g.grade !== null);
@@ -565,13 +599,34 @@ export function StudentCourseDetailPage() {
               { id: 4, type: "announcement", title: "Assignment Deadline Extended", message: "The Case Study assignment has been extended to March 15. Please ensure you submit by the new deadline.", time: "Last week", urgent: false, author: course.instructor },
               { id: 5, type: "discussion", title: "Study group for upcoming quiz", message: "Anyone want to form a study group for the weekend cohort? We can meet via Zoom on Friday evenings.", time: "Last week", urgent: false, author: "Sarah Osei", replies: 8 },
             ];
-            
+
+            const announcementItems = courseCommunications.filter((c) => c.type === "announcement");
+            const discussionItems = courseCommunications.filter((c) => c.type === "discussion");
+            const nonUrgentAnnouncements = announcementItems.filter((c) => !c.urgent);
+
             return (
               <div className="flex flex-col gap-6">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCommunicationsSubTab("announcements")}
+                    className={`px-3 py-1.5 rounded-lg border transition-colors ${communicationsSubTab === "announcements" ? "bg-[#0a1628] border-[#0a1628] text-white" : "bg-white border-gray-200 text-[#6c6c6c] hover:bg-gray-50"}`}
+                    style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 700 }}
+                  >
+                    Announcements
+                  </button>
+                  <button
+                    onClick={() => setCommunicationsSubTab("discussions")}
+                    className={`px-3 py-1.5 rounded-lg border transition-colors ${communicationsSubTab === "discussions" ? "bg-[#0a1628] border-[#0a1628] text-white" : "bg-white border-gray-200 text-[#6c6c6c] hover:bg-gray-50"}`}
+                    style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 700 }}
+                  >
+                    Discussions
+                  </button>
+                </div>
+
                 {/* Urgent Announcements Banner (similar to dashboard) */}
-                {courseCommunications.filter(c => c.urgent).length > 0 && (
+                {communicationsSubTab === "announcements" && announcementItems.filter(c => c.urgent).length > 0 && (
                   <div className="flex flex-col gap-3">
-                    {courseCommunications.filter(c => c.urgent).map(c => (
+                    {announcementItems.filter(c => c.urgent).map(c => (
                       <div key={`urgent-${c.id}`} className="bg-[rgba(212,165,116,0.1)] border border-[rgba(212,165,116,0.3)] rounded-xl px-5 py-4 flex items-start gap-4">
                         <div className="w-10 h-10 rounded-full bg-[#d4a574] flex items-center justify-center flex-shrink-0 mt-0.5">
                           <Bell size={18} className="text-white" />
@@ -594,19 +649,23 @@ export function StudentCourseDetailPage() {
 
                 <div className="bg-white rounded-xl border border-gray-200 p-6">
                   <div className="flex items-center justify-between mb-5">
-                    <h2 style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: "16px", color: "#0a1628" }}>Recent Activity</h2>
-                    <div className="flex items-center gap-2">
-                      <button className="px-3 py-1.5 rounded-lg border border-gray-200 text-[#0a1628] hover:bg-gray-50 transition-colors" style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 500 }}>
-                        Filter: All
-                      </button>
-                      <button className="px-3 py-1.5 rounded-lg bg-[#0a1628] text-white hover:bg-[#0a1628]/90 transition-colors" style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 500 }}>
-                        New Discussion
-                      </button>
-                    </div>
+                    <h2 style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: "16px", color: "#0a1628" }}>
+                      {communicationsSubTab === "announcements" ? "Announcements" : "Discussions"}
+                    </h2>
+                    {communicationsSubTab === "discussions" && (
+                      <div className="flex items-center gap-2">
+                        <button className="px-3 py-1.5 rounded-lg border border-gray-200 text-[#0a1628] hover:bg-gray-50 transition-colors" style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 500 }}>
+                          Filter: All
+                        </button>
+                        <button className="px-3 py-1.5 rounded-lg bg-[#0a1628] text-white hover:bg-[#0a1628]/90 transition-colors" style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 500 }}>
+                          New Discussion
+                        </button>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex flex-col gap-3">
-                    {courseCommunications.filter(c => !c.urgent).map((item) => (
+                    {(communicationsSubTab === "announcements" ? nonUrgentAnnouncements : discussionItems).map((item) => (
                       <div key={item.id} className="flex items-start gap-4 p-4 rounded-xl bg-[#f8f8f9] hover:bg-[#f2f2f4] transition-colors cursor-pointer border border-transparent hover:border-gray-200">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${item.type === 'announcement' ? 'bg-[rgba(212,165,116,0.15)]' : 'bg-gray-200'}`}>
                           {item.type === 'announcement' ? <Bell size={16} className="text-[#d4a574]" /> : <MessageCircle size={16} className="text-gray-600" />}
@@ -637,6 +696,150 @@ export function StudentCourseDetailPage() {
                     ))}
                   </div>
                 </div>
+              </div>
+            );
+          })()}
+
+          {/* ════════════════════════════════════════════════════════════ */}
+          {/* TAB: Students                                             */}
+          {/* ════════════════════════════════════════════════════════════ */}
+          {activeTab === "students" && (() => {
+            const INITIAL_SHOW = 20;
+
+            const filtered = enrolledStudents.filter((s) =>
+              s.name.toLowerCase().includes(studentSearch.toLowerCase())
+            );
+
+            // Group students by their group membership
+            const grouped: { groupName: string; groupId: string; students: typeof filtered }[] = [];
+            const ungrouped: typeof filtered = [];
+
+            filtered.forEach((s) => {
+              const studentGroup = courseGroups.find((g) => g.members.some((m) => m.studentId === s.id));
+              if (studentGroup) {
+                let bucket = grouped.find((b) => b.groupId === studentGroup.id);
+                if (!bucket) {
+                  bucket = { groupName: studentGroup.name, groupId: studentGroup.id, students: [] };
+                  grouped.push(bucket);
+                }
+                bucket.students.push(s);
+              } else {
+                ungrouped.push(s);
+              }
+            });
+
+            const toggleGroup = (id: string) =>
+              setCollapsedGroups((prev) => ({ ...prev, [id]: !prev[id] }));
+
+            const allGrouped = [...grouped, ...(ungrouped.length > 0 ? [{ groupName: "Not in a group", groupId: "__ungrouped__", students: ungrouped }] : [])];
+
+            return (
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4 gap-3">
+                  <div>
+                    <h2 style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: "16px", color: "#0a1628" }}>Students</h2>
+                    <p style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", color: "#6c6c6c", marginTop: 3 }}>
+                      {enrolledStudents.length} student{enrolledStudents.length === 1 ? "" : "s"} enrolled
+                      {studentSearch && ` · ${filtered.length} matching`}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate(`/student/communications?compose=1&courseId=${courseId}&mode=broadcast`)}
+                    className="flex items-center gap-2 px-3 h-9 rounded bg-[#0a1628] text-white hover:bg-[#0d1e35] transition-colors"
+                    style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 700 }}
+                  >
+                    <MessageCircle size={14} /> Broadcast Message
+                  </button>
+                </div>
+
+                {/* Search */}
+                <div className="relative mb-4">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6c6c6c]" />
+                  <input
+                    type="text"
+                    placeholder="Search students by name..."
+                    value={studentSearch}
+                    onChange={(e) => { setStudentSearch(e.target.value); setShowAllStudents(false); }}
+                    className="w-full pl-8 pr-3 py-2 border border-gray-200 bg-[#f8f8f9] text-[#0a1628] placeholder-[#b0b0b0] outline-none focus:border-[#d4a574] transition-all rounded-lg"
+                    style={{ fontFamily: "Inter, sans-serif", fontSize: "13px" }}
+                  />
+                </div>
+
+                {filtered.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <p style={{ fontFamily: "Inter, sans-serif", fontSize: "13px", color: "#6c6c6c" }}>No students found.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-4 max-h-[600px] overflow-y-auto">
+                    {allGrouped.map((section) => {
+                      const isCollapsed = collapsedGroups[section.groupId];
+                      const isUngrouped = section.groupId === "__ungrouped__";
+                      return (
+                        <div key={section.groupId}>
+                          <button
+                            onClick={() => toggleGroup(section.groupId)}
+                            className="flex items-center gap-2 w-full text-left px-2 py-2 rounded hover:bg-[#f5f6f8] transition-colors mb-1"
+                          >
+                            {isCollapsed ? <ChevronRight size={14} className="text-[#6c6c6c]" /> : <ChevronDown size={14} className="text-[#6c6c6c]" />}
+                            <span style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 700, color: isUngrouped ? "#6c6c6c" : "#0a1628" }}>
+                              {section.groupName}
+                            </span>
+                            <span style={{ fontFamily: "Inter, sans-serif", fontSize: "11px", color: "#b0b0b0" }}>
+                              ({section.students.length})
+                            </span>
+                          </button>
+                          {!isCollapsed && (
+                            <div className="flex flex-col gap-2 ml-4">
+                              {section.students.map((s) => {
+                                const studentGroup = courseGroups.find((g) => g.members.some((m) => m.studentId === s.id));
+                                const isLeader = studentGroup?.leaderId === s.id;
+                                return (
+                                  <div
+                                    key={s.id}
+                                    className="flex items-center gap-3 p-3 rounded-lg bg-[#f8f8f9] border border-transparent hover:border-gray-200 transition-colors"
+                                  >
+                                    <div className="w-8 h-8 rounded-full bg-[#d4a574]/15 flex items-center justify-center flex-shrink-0" style={{ fontFamily: "Inter, sans-serif", fontSize: "10px", fontWeight: 800, color: "#0a1628" }}>
+                                      {s.initials}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <p style={{ fontFamily: "Inter, sans-serif", fontSize: "13px", fontWeight: 600, color: "#0a1628", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                          {s.name}
+                                        </p>
+                                        {isLeader && (
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#fdf3e7] border border-[#d4a574]/40 text-[#a68b5b]" style={{ fontFamily: "Inter, sans-serif", fontSize: "10px", fontWeight: 800 }}>
+                                            <Crown size={10} /> Leader
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <button
+                                      onClick={() => navigate(`/student/communications?compose=1&courseId=${courseId}&mode=dm&studentId=${s.id}`)}
+                                      className="px-3 py-1.5 rounded-lg bg-[#5a5a62] text-white hover:bg-[#4a4a52] transition-colors"
+                                      style={{ fontFamily: "Inter, sans-serif", fontSize: "11px", fontWeight: 700 }}
+                                    >
+                                      Chat
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {!showAllStudents && filtered.length > INITIAL_SHOW && (
+                  <button
+                    onClick={() => setShowAllStudents(true)}
+                    className="mt-4 w-full py-2 text-center border border-gray-200 hover:bg-[#f5f6f8] rounded-lg transition-colors"
+                    style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 600, color: "#d4a574" }}
+                  >
+                    Show all {filtered.length} students
+                  </button>
+                )}
               </div>
             );
           })()}
@@ -879,9 +1082,11 @@ export function StudentCourseDetailPage() {
                   <div className="w-14 h-14 rounded-full bg-[#f3f3f5] flex items-center justify-center mx-auto mb-4">
                     <Check size={24} className="text-[#3a3a42]" />
                   </div>
-                  <h3 style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: "16px", color: "#0a1628" }}>Submitted</h3>
+                  <h3 style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: "16px", color: "#0a1628" }}>{lastSubmitWasResubmission ? "Resubmitted" : "Submitted"}</h3>
                   <p style={{ fontFamily: "Inter, sans-serif", fontSize: "13px", color: "#8e8e96", marginTop: 6, lineHeight: 1.5 }}>
-                    Your assignment has been submitted. Your instructor will be notified.
+                    {lastSubmitWasResubmission
+                      ? "Your updated submission has been uploaded. Your instructor will review the latest version."
+                      : "Your assignment has been submitted. Your instructor will be notified."}
                   </p>
                   <button onClick={closeAssignmentDetail} className="mt-6 px-5 py-2 rounded-lg bg-[#0a1628] text-[#faf8f5] hover:bg-[#0d1e35] transition-colors" style={{ fontFamily: "Inter, sans-serif", fontSize: "13px", fontWeight: 500 }}>
                     Done
@@ -946,11 +1151,30 @@ export function StudentCourseDetailPage() {
                           <p style={{ fontFamily: "Inter, sans-serif", fontSize: "10px", color: "#b0b0b5" }}>Submitted {selectedAssignment.submittedAt}</p>
                         </div>
                       </div>
+                      {selectedAssignment.allowResubmit &&
+                        selectedAssignment.status !== "Graded" &&
+                        (selectedAssignment.attempts ?? 0) < (selectedAssignment.maxAttempts ?? 2) && (
+                          <div className="mt-3 flex items-center justify-between gap-3">
+                            <p style={{ fontFamily: "Inter, sans-serif", fontSize: "11px", color: "#8e8e96" }}>
+                              Attempt {selectedAssignment.attempts ?? 1} of {selectedAssignment.maxAttempts ?? 2}
+                            </p>
+                            <button
+                              onClick={() => {
+                                setIsResubmitting(true);
+                                setUploadedFile(selectedAssignment.fileName ?? null);
+                              }}
+                              className="px-3 py-1.5 rounded-lg border border-[#0a1628] text-[#0a1628] hover:bg-[#0a1628] hover:text-white transition-colors"
+                              style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 700 }}
+                            >
+                              Edit Submission
+                            </button>
+                          </div>
+                        )}
                     </div>
                   )}
 
                   {/* Submission area (active only) */}
-                  {isActive(selectedAssignment.status) && (
+                  {(isActive(selectedAssignment) || isResubmitting) && (
                     <>
                       <div className="mb-5">
                         <p style={{ fontFamily: "Inter, sans-serif", fontSize: "11px", fontWeight: 600, color: "#8e8e96", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Your Submission</p>
@@ -991,7 +1215,7 @@ export function StudentCourseDetailPage() {
                         className="w-full py-2.5 rounded-lg bg-[#0a1628] text-[#faf8f5] hover:bg-[#0d1e35] transition-colors disabled:opacity-30"
                         style={{ fontFamily: "Inter, sans-serif", fontSize: "13px", fontWeight: 600 }}
                       >
-                        Submit Assignment
+                        {isResubmitting ? "Upload New Version" : "Submit Assignment"}
                       </button>
                     </>
                   )}
@@ -1093,7 +1317,7 @@ export function StudentCourseDetailPage() {
               )}
 
               {/* Start quiz button */}
-              {isActive(selectedQuiz.status) && (
+              {(selectedQuiz.status === "Not Started" || selectedQuiz.status === "In Progress") && (
                 <button
                   className="w-full py-2.5 rounded-lg bg-[#0a1628] text-[#faf8f5] hover:bg-[#0d1e35] transition-colors"
                   style={{ fontFamily: "Inter, sans-serif", fontSize: "13px", fontWeight: 600 }}

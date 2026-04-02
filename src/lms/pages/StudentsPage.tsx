@@ -19,7 +19,6 @@ import {
   Users2,
 } from "lucide-react";
 import { AlmsHeader } from "../components/AlmsHeader";
-import { ProfileBanner } from "../components/ProfileBanner";
 import { InstructorSidebar } from "../components/InstructorSidebar";
 import { COURSES } from "../data/courses";
 import { courseSelectLabel } from "../lib/courseLabels";
@@ -111,8 +110,7 @@ export function StudentsPage() {
 
   return (
     <div className="min-h-screen bg-[#f5f6f8] flex flex-col">
-      <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "Dashboard" }, { label: "Students" }]} />
-      <ProfileBanner name="Prof Mensah Oduro" role="Instructor" />
+      <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "Dashboard" }, { label: "Students" }]} instituteName="SOMDA INSTITUTE OF PROFESSIONAL STUDIES" showAvatar />
 
       <div className="flex-1 flex gap-6 px-6 py-6 max-w-[1200px] mx-auto w-full">
         <InstructorSidebar />

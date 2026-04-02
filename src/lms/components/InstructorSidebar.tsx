@@ -1,24 +1,21 @@
 import {
+  LayoutDashboard,
   BookOpen,
-  Settings,
   CalendarDays,
   MessageSquare,
-  Workflow,
+  Users,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router";
 
 const mainItems = [
+  { label: "Dashboard", icon: LayoutDashboard, href: "/instructor/dashboard" },
   { label: "My Courses", icon: BookOpen, href: "/instructor/courses" },
   { label: "Calendar", icon: CalendarDays, href: "/instructor/calendar" },
 ];
 
 const communicationItems = [
-  { label: "Communications", icon: MessageSquare, href: "/instructor/communications", badge: 3 },
-];
-
-const settingsItems = [
-  { label: "Branding", icon: Settings, href: "/instructor/branding" },
-  { label: "System Map", icon: Workflow, href: "/instructor/architecture" },
+  { label: "Messages", icon: MessageSquare, href: "/instructor/communications", badge: 3 },
+  { label: "Groups", icon: Users, href: "/instructor/groups" },
 ];
 
 interface NavItemProps {
@@ -100,20 +97,8 @@ export function InstructorSidebar() {
       </nav>
 
       <nav className="flex flex-col gap-1">
-        <SectionLabel>Communication</SectionLabel>
+        <SectionLabel>Messages</SectionLabel>
         {communicationItems.map((item) => (
-          <NavItem
-            key={item.href}
-            {...item}
-            active={isActive(item.href)}
-            onClick={() => navigate(item.href)}
-          />
-        ))}
-      </nav>
-
-      <nav className="flex flex-col gap-1">
-        <SectionLabel>Settings</SectionLabel>
-        {settingsItems.map((item) => (
           <NavItem
             key={item.href}
             {...item}

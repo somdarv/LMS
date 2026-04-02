@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "ALMS — LMS Demo",
+  title: "SOMDA INSTITUTE OF PROFESSIONAL STUDIES — LMS Demo",
   description: "SOMDA Institute LMS platform demo",
 };
 

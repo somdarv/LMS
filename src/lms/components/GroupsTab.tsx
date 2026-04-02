@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, X, Lock, Unlock, Users2, AlertTriangle, Crown, UserCheck } from "lucide-react";
+import { Plus, X, Lock, Unlock, Users2, AlertTriangle, Crown, UserCheck, Shuffle, Search, LayoutGrid, List } from "lucide-react";
 import {
   getCourseGroups, recalcGroupStatus,
   type Group, type GroupMember,
@@ -26,10 +26,40 @@ export function GroupsTab({ courseId, track, students }: GroupsTabProps) {
   const [newGroupMaxSize, setNewGroupMaxSize] = useState(4);
   const [creating, setCreating] = useState(false);
   const [selfEnrollOpen, setSelfEnrollOpen] = useState(false);
+  const [groupSearch, setGroupSearch] = useState("");
+  const [compactView, setCompactView] = useState(false);
+  const GROUPS_PER_PAGE = 10;
+  const [showAllGroups, setShowAllGroups] = useState(false);
+
+  // Auto-generate groups draft flow
+  const [autoGenOpen, setAutoGenOpen] = useState(false);
+  const [autoGenMode, setAutoGenMode] = useState<"total" | "size">("total");
+  const [autoGenTotalGroups, setAutoGenTotalGroups] = useState(4);
+  const [autoGenGroupSize, setAutoGenGroupSize] = useState(4);
+  const [autoGenShuffle, setAutoGenShuffle] = useState(true);
+  const [autoGenBaseGroups, setAutoGenBaseGroups] = useState<Group[] | null>(null);
+  const [autoGenGroupIds, setAutoGenGroupIds] = useState<string[]>([]);
+  const [autoGenGenerated, setAutoGenGenerated] = useState(false);
 
   // Which students are already in a group
   const groupedIds = new Set(groups.flatMap((g) => g.members.map((m) => m.studentId)));
   const ungrouped = students.filter((s) => !groupedIds.has(s.id));
+  const autoGenUngroupedCount = ungrouped.length;
+  const autoGenPreview = (() => {
+    if (autoGenUngroupedCount === 0) {
+      return { groupCount: 0, groupSize: 0 };
+    }
+    const total = Math.max(1, autoGenTotalGroups);
+    const size = Math.max(1, autoGenGroupSize);
+    if (autoGenMode === "total") {
+      const groupCount = Math.min(total, autoGenUngroupedCount);
+      const groupSize = Math.max(1, Math.ceil(autoGenUngroupedCount / Math.max(1, groupCount)));
+      return { groupCount, groupSize };
+    }
+    const groupSize = size;
+    const groupCount = Math.min(autoGenUngroupedCount, Math.max(1, Math.ceil(autoGenUngroupedCount / groupSize)));
+    return { groupCount, groupSize };
+  })();
 
   const handleCreateGroup = () => {
     const name = newGroupName.trim();
@@ -118,6 +148,132 @@ export function GroupsTab({ courseId, track, students }: GroupsTabProps) {
     );
   };
 
+  const cloneGroups = (list: Group[]): Group[] =>
+    list.map((g) => ({
+      ...g,
+      members: g.members.map((m) => ({ ...m })),
+    }));
+
+  const shuffleArray = <T,>(arr: T[]): T[] => {
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  };
+
+  const openAutoGenerate = () => {
+    setAutoGenBaseGroups(cloneGroups(groups));
+    setAutoGenGroupIds([]);
+    setAutoGenGenerated(false);
+    setAutoGenOpen(true);
+    setCreating(false);
+  };
+
+  const handleAutoGenerate = () => {
+    const available = ungrouped;
+    if (available.length === 0) return;
+
+    const total = Math.max(1, autoGenTotalGroups);
+    const size = Math.max(1, autoGenGroupSize);
+
+    let groupCount: number;
+    let groupMaxSize: number;
+    if (autoGenMode === "total") {
+      groupCount = Math.min(total, available.length);
+      groupMaxSize = Math.max(1, Math.ceil(available.length / groupCount));
+    } else {
+      groupMaxSize = size;
+      groupCount = Math.min(available.length, Math.max(1, Math.ceil(available.length / groupMaxSize)));
+    }
+
+    const working = autoGenShuffle ? shuffleArray(available) : [...available];
+
+    const createdAt = new Date().toISOString();
+    const generated: Group[] = [];
+    const generatedIds: string[] = [];
+
+    for (let i = 0; i < groupCount; i += 1) {
+      const start = i * groupMaxSize;
+      const slice = working.slice(start, start + groupMaxSize);
+      if (slice.length === 0) break;
+
+      const id = `grp-${courseId}-auto-${Date.now()}-${i}`;
+      generatedIds.push(id);
+
+      const g: Group = {
+        id,
+        courseId,
+        track,
+        name: `Auto Group ${generated.length + 1}`,
+        members: slice.map((s) => ({
+          studentId: s.id,
+          name: s.name,
+          initials: s.initials,
+          joinedAt: createdAt,
+        })),
+        maxSize: groupMaxSize,
+        status: "open",
+        createdBy: "instructor",
+        createdAt,
+        leaderId: undefined,
+      };
+      g.status = recalcGroupStatus(g);
+      generated.push(g);
+    }
+
+    setAutoGenGroupIds(generatedIds);
+    setAutoGenGenerated(true);
+    // Append to existing groups, only assigning currently ungrouped students.
+    setGroups((prev) => [...prev, ...generated]);
+  };
+
+  const handleShuffleDraft = () => {
+    if (autoGenGroupIds.length === 0) return;
+
+    const draftGroups = groups.filter((g) => autoGenGroupIds.includes(g.id));
+    if (draftGroups.length === 0) return;
+
+    const otherGroups = groups.filter((g) => !autoGenGroupIds.includes(g.id));
+    const allMembers = draftGroups.flatMap((g) => g.members);
+    const shuffled = shuffleArray(allMembers);
+
+    let idx = 0;
+    const updatedDraftById = new Map<string, Group>();
+    draftGroups.forEach((g) => {
+      const take = shuffled.slice(idx, idx + g.maxSize);
+      idx += take.length;
+      const updated: Group = {
+        ...g,
+        members: take,
+        // Leader assignments depend on members; clear them after shuffle.
+        leaderId: undefined,
+        status: "open",
+        createdAt: g.createdAt,
+      };
+      updated.status = recalcGroupStatus(updated);
+      updatedDraftById.set(g.id, updated);
+    });
+
+    setGroups([...otherGroups, ...draftGroups.map((g) => updatedDraftById.get(g.id) || g)]);
+  };
+
+  const confirmAutoGenerate = () => {
+    setAutoGenOpen(false);
+    setAutoGenBaseGroups(null);
+    setAutoGenGroupIds([]);
+    setAutoGenGenerated(false);
+  };
+
+  const cancelAutoGenerate = () => {
+    if (autoGenBaseGroups) setGroups(autoGenBaseGroups);
+    setAutoGenOpen(false);
+    setAutoGenBaseGroups(null);
+    setAutoGenGroupIds([]);
+    setAutoGenGenerated(false);
+  };
+
   const statusColor: Record<string, string> = {
     open: "bg-green-50 text-green-700 border-green-200",
     full: "bg-[#fdf3e7] text-[#a68b5b] border-[#d4a574]/40",
@@ -135,6 +291,23 @@ export function GroupsTab({ courseId, track, students }: GroupsTabProps) {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {/* Compact / expanded view toggle */}
+          <div className="flex items-center border border-[#dcdce0] rounded-lg overflow-hidden">
+            <button
+              onClick={() => setCompactView(false)}
+              className={`p-2 transition-colors ${!compactView ? "bg-[#0a1628] text-white" : "bg-white text-[#8e8e96] hover:text-[#0a1628]"}`}
+              title="Expanded view"
+            >
+              <List size={14} />
+            </button>
+            <button
+              onClick={() => setCompactView(true)}
+              className={`p-2 transition-colors ${compactView ? "bg-[#0a1628] text-white" : "bg-white text-[#8e8e96] hover:text-[#0a1628]"}`}
+              title="Compact view"
+            >
+              <LayoutGrid size={14} />
+            </button>
+          </div>
           {/* Self-enrollment toggle */}
           <button
             onClick={() => setSelfEnrollOpen((v) => !v)}
@@ -144,6 +317,13 @@ export function GroupsTab({ courseId, track, students }: GroupsTabProps) {
           >
             <UserCheck size={13} />
             Self-enroll {selfEnrollOpen ? "On" : "Off"}
+          </button>
+          <button
+            onClick={openAutoGenerate}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#d4a574]/40 bg-white hover:bg-[#faf8f5] transition-colors"
+            style={{ ...S, fontSize: "13px", fontWeight: 600, color: "#a68b5b" }}
+          >
+            <Shuffle size={14} /> Auto-generate
           </button>
           <button
             onClick={() => setCreating(true)}
@@ -165,6 +345,125 @@ export function GroupsTab({ courseId, track, students }: GroupsTabProps) {
               Students can see and join any open group from their course page until groups are full or you turn this off.
             </p>
           </div>
+        </div>
+      )}
+
+      {/* Auto-generate groups panel */}
+      {autoGenOpen && (
+        <div className="mb-4 p-4 rounded-xl border border-[#d4a574]/30 bg-[#fafafa]">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p style={{ ...S, fontSize: "14px", fontWeight: 800, color: "#0a1628" }}>Auto-generate groups</p>
+              <p style={{ ...S, fontSize: "12px", color: "#6c6c6c", marginTop: 4 }}>
+                {autoGenUngroupedCount} ungrouped student{autoGenUngroupedCount !== 1 ? "s" : ""} · Preview:{" "}
+                {autoGenPreview.groupCount} group{autoGenPreview.groupCount !== 1 ? "s" : ""} · up to{" "}
+                {autoGenPreview.groupSize} each
+              </p>
+            </div>
+            <button
+              onClick={cancelAutoGenerate}
+              className="text-[#8e8e96] hover:text-[#0a1628] transition-colors"
+              title="Cancel auto-generate"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-3 items-center">
+            <button
+              onClick={() => setAutoGenMode("total")}
+              className={`px-4 py-2 rounded-lg border transition-colors ${
+                autoGenMode === "total" ? "bg-[#0a1628] border-[#0a1628] text-white" : "bg-white border-[#dcdce0] text-[#5a5a62] hover:border-[#0a1628]"
+              }`}
+              style={{ ...S, fontSize: "12px", fontWeight: 700 }}
+              type="button"
+            >
+              Total groups
+            </button>
+            <button
+              onClick={() => setAutoGenMode("size")}
+              className={`px-4 py-2 rounded-lg border transition-colors ${
+                autoGenMode === "size" ? "bg-[#0a1628] border-[#0a1628] text-white" : "bg-white border-[#dcdce0] text-[#5a5a62] hover:border-[#0a1628]"
+              }`}
+              style={{ ...S, fontSize: "12px", fontWeight: 700 }}
+              type="button"
+            >
+              Group size
+            </button>
+
+            {autoGenMode === "total" ? (
+              <div className="flex items-center gap-2">
+                <span style={{ ...S, fontSize: "12px", color: "#6c6c6c", fontWeight: 600 }}># Groups</span>
+                <input
+                  type="number"
+                  value={autoGenTotalGroups}
+                  min={1}
+                  max={20}
+                  onChange={(e) => setAutoGenTotalGroups(Math.max(1, Number(e.target.value)))}
+                  className="w-20 px-3 py-2 border border-[#dcdce0] rounded-lg outline-none focus:border-[#0a1628] bg-white"
+                  style={{ ...S, fontSize: "13px" }}
+                />
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span style={{ ...S, fontSize: "12px", color: "#6c6c6c", fontWeight: 600 }}>Size</span>
+                <input
+                  type="number"
+                  value={autoGenGroupSize}
+                  min={1}
+                  max={20}
+                  onChange={(e) => setAutoGenGroupSize(Math.max(1, Number(e.target.value)))}
+                  className="w-20 px-3 py-2 border border-[#dcdce0] rounded-lg outline-none focus:border-[#0a1628] bg-white"
+                  style={{ ...S, fontSize: "13px" }}
+                />
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setAutoGenShuffle((v) => !v)}
+              className={`ml-auto w-fit flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                autoGenShuffle ? "bg-[#fdf3e7] border-[#d4a574] text-[#a68b5b]" : "bg-white border-[#dcdce0] text-[#5a5a62] hover:border-[#0a1628]"
+              }`}
+              style={{ ...S, fontSize: "12px", fontWeight: 700 }}
+              title="Shuffle assignment randomly"
+            >
+              <Shuffle size={14} /> Randomize {autoGenShuffle ? "On" : "Off"}
+            </button>
+          </div>
+
+          {!autoGenGenerated ? (
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleAutoGenerate}
+                disabled={autoGenUngroupedCount === 0}
+                className="px-4 py-2 rounded-lg bg-[#0a1628] text-white text-sm font-semibold disabled:opacity-30 hover:bg-[#1a2a42] transition-colors"
+                style={S}
+              >
+                Generate
+              </button>
+            </div>
+          ) : (
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleShuffleDraft}
+                className="px-4 py-2 rounded-lg border border-[#dcdce0] bg-white text-sm font-semibold hover:bg-[#fafafb] transition-colors"
+                style={S}
+              >
+                Shuffle
+              </button>
+              <button
+                type="button"
+                onClick={confirmAutoGenerate}
+                className="px-4 py-2 rounded-lg bg-[#0a1628] text-white text-sm font-semibold hover:bg-[#1a2a42] transition-colors"
+                style={S}
+              >
+                Confirm
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -215,25 +514,71 @@ export function GroupsTab({ courseId, track, students }: GroupsTabProps) {
         </div>
       )}
 
+      {/* Search */}
+      {groups.length > 3 && (
+        <div className="relative mb-4">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8e8e96]" />
+          <input
+            type="text"
+            placeholder="Search groups by name..."
+            value={groupSearch}
+            onChange={(e) => { setGroupSearch(e.target.value); setShowAllGroups(false); }}
+            className="w-full max-w-xs pl-8 pr-3 py-2 border border-[#dcdce0] bg-white text-[#0a1628] placeholder-[#b0b0b5] outline-none focus:border-[#0a1628] rounded-lg"
+            style={{ ...S, fontSize: "13px" }}
+          />
+        </div>
+      )}
+
       {/* Groups list */}
-      {groups.length === 0 && !creating && (
+      {(() => {
+        const filtered = groupSearch
+          ? groups.filter((g) => g.name.toLowerCase().includes(groupSearch.toLowerCase()))
+          : groups;
+        const visible = showAllGroups ? filtered : filtered.slice(0, GROUPS_PER_PAGE);
+        const hasMore = filtered.length > GROUPS_PER_PAGE && !showAllGroups;
+
+        return (
+          <>
+      {filtered.length === 0 && !creating && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="w-14 h-14 rounded-full bg-[#f3f3f5] flex items-center justify-center mb-4">
             <Users2 size={24} className="text-[#b0b0b5]" />
           </div>
-          <p style={{ ...S, fontSize: "15px", fontWeight: 600, color: "#3a3a42" }}>No groups yet</p>
+          <p style={{ ...S, fontSize: "15px", fontWeight: 600, color: "#3a3a42" }}>{groupSearch ? "No groups match your search" : "No groups yet"}</p>
           <p style={{ ...S, fontSize: "13px", color: "#8e8e96", marginTop: 4 }}>
-            Create groups and assign students, or wait for students to self-enroll.
+            {groupSearch ? "Try a different search term." : "Create groups and assign students, or wait for students to self-enroll."}
           </p>
         </div>
       )}
 
-      <div className="flex flex-col gap-4">
-        {groups.map((group) => {
+      <div className={`flex flex-col max-h-[600px] overflow-y-auto ${compactView ? "gap-2" : "gap-4"}`}>
+        {visible.map((group) => {
           const availableStudents = ungrouped.concat(
             // also allow reassigning from another group — show truly ungrouped only for simplicity
             []
           );
+
+          if (compactView) {
+            return (
+              <div key={group.id} className="flex items-center gap-3 px-4 py-3 bg-white border border-[#ededf0] rounded-lg">
+                <div className="w-7 h-7 rounded bg-[#0a1628]/8 flex items-center justify-center flex-shrink-0">
+                  <Users2 size={12} className="text-[#0a1628]" />
+                </div>
+                <p style={{ ...S, fontSize: "13px", fontWeight: 700, color: "#0a1628" }} className="flex-1 min-w-0 truncate">{group.name}</p>
+                <span style={{ ...S, fontSize: "11px", color: "#8e8e96" }}>{group.members.length}/{group.maxSize}</span>
+                <span className={`px-2 py-0.5 rounded-full border text-[9px] font-semibold ${statusColor[group.status] || ""}`} style={S}>
+                  {group.status.charAt(0).toUpperCase() + group.status.slice(1)}
+                </span>
+                <button onClick={() => handleToggleLock(group.id)} title={group.status === "locked" ? "Unlock" : "Lock"} className="w-6 h-6 flex items-center justify-center rounded text-[#8e8e96] hover:text-[#0a1628] hover:bg-[#f3f3f5] transition-colors">
+                  {group.status === "locked" ? <Unlock size={12} /> : <Lock size={12} />}
+                </button>
+                <button onClick={() => handleDeleteGroup(group.id)} title="Delete" className="w-6 h-6 flex items-center justify-center rounded text-[#8e8e96] hover:text-red-500 hover:bg-red-50 transition-colors">
+                  <X size={12} />
+                </button>
+              </div>
+            );
+          }
+
           return (
             <div key={group.id} className="bg-white border border-[#ededf0] rounded-xl overflow-hidden">
               {/* Group header */}
@@ -341,6 +686,19 @@ export function GroupsTab({ courseId, track, students }: GroupsTabProps) {
           );
         })}
       </div>
+
+      {hasMore && (
+        <button
+          onClick={() => setShowAllGroups(true)}
+          className="mt-4 w-full py-2 text-center border border-[#dcdce0] hover:bg-[#f5f6f8] rounded-lg transition-colors"
+          style={{ ...S, fontSize: "12px", fontWeight: 600, color: "#d4a574" }}
+        >
+          Show all {filtered.length} groups
+        </button>
+      )}
+          </>
+        );
+      })()}
 
       {/* Ungrouped students */}
       {ungrouped.length > 0 && (

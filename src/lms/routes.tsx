@@ -21,6 +21,9 @@ import { ModulesPage } from "./pages/ModulesPage";
 import { CommunicationsPage } from "./pages/CommunicationsPage";
 import { GradingCenterPage } from "./pages/GradingCenterPage";
 import { ArchitecturePage } from "./pages/ArchitecturePage";
+import { InstructorGroupsPage } from "./pages/InstructorGroupsPage";
+import { TermsConditionsPage } from "./pages/TermsConditionsPage";
+import { PrivacyPolicyPage } from "./pages/PrivacyPolicyPage";
 
 // Student pages
 import { StudentEnrollPage } from "./pages/StudentEnrollPage";
@@ -37,6 +40,7 @@ import { StudentQuizzesPage } from "./pages/StudentQuizzesPage";
 import { StudentGradesPage } from "./pages/StudentGradesPage";
 import { StudentCalendarPage } from "./pages/StudentCalendarPage";
 import { StudentCommunicationsPage } from "./pages/StudentCommunicationsPage";
+import { StudentGroupsPage } from "./pages/StudentGroupsPage";
 
 // Admin pages
 import { AdminGenerateEnrollmentPage } from "./pages/AdminGenerateEnrollmentPage";
@@ -67,6 +71,11 @@ export const lmsRoutes: RouteObject[] = [
       { path: "/instructor/communications",      Component: CommunicationsPage },
       { path: "/instructor/grading/:assignmentId", Component: GradingCenterPage },
       { path: "/instructor/architecture",        Component: ArchitecturePage },
+      { path: "/instructor/groups",            Component: InstructorGroupsPage },
+
+      // Legal pages (public)
+      { path: "/terms-conditions",            Component: TermsConditionsPage },
+      { path: "/privacy-policy",             Component: PrivacyPolicyPage },
 
       // Admin routes
       { path: "/admin/enrollment-links",         Component: AdminGenerateEnrollmentPage },
@@ -86,6 +95,7 @@ export const lmsRoutes: RouteObject[] = [
       { path: "/student/grades",                Component: StudentGradesPage },
       { path: "/student/calendar",              Component: StudentCalendarPage },
       { path: "/student/communications",        Component: StudentCommunicationsPage },
+      { path: "/student/groups",               Component: StudentGroupsPage },
     ],
   },
 ];

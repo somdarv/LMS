@@ -3,6 +3,7 @@ import {
   Clock, ChevronLeft, ChevronRight, Check, X, AlertTriangle,
   HelpCircle, PenLine, AlignLeft, Upload, FileText, Link2,
   ClipboardList, Eye, Users, Plus, RotateCcw,
+  Lock,
 } from "lucide-react";
 import { getCourseGroups, recalcGroupStatus, type Group, type GroupAssignmentConfig } from "../data/groups";
 
@@ -49,6 +50,9 @@ export interface AssignmentConfig {
   allowLate: boolean;
   latePenalty?: number;
   allowResubmit?: boolean;
+  allowDocumentDownload?: boolean;
+  /** Maximum submission attempts allowed (used for attempt-aware UI). */
+  maxAttempts?: number;
   week?: number;
   attachmentName?: string;
   attachmentUrl?: string;
@@ -110,10 +114,16 @@ export function AssignmentTaker({
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isResubmit, setIsResubmit] = useState(false);
+  const [attempt, setAttempt] = useState(1);
+  const [attemptHistory, setAttemptHistory] = useState<
+    Array<{ attempt: number; submittedAt: string; isResubmission: boolean }>
+  >([]);
   const [showGroupModal, setShowGroupModal] = useState(false);
 
   const hasQuestions = config.deliveryFormat === "bulk" || config.deliveryFormat === "short" || config.deliveryFormat === "long";
   const questions = config.questions;
+  const canDownloadDocument = config.allowDocumentDownload ?? true;
+  const maxAttempts = config.maxAttempts ?? (config.allowResubmit ? 2 : 1);
   const answeredCount = questions.filter((q) => {
     const a = answers[q.id];
     return a !== undefined && a !== "";
@@ -129,12 +139,17 @@ export function AssignmentTaker({
       setSubmitting(false);
       setShowConfirm(false);
       setPhase("submitted");
+      setAttemptHistory((prev) => [
+        ...prev,
+        { attempt, submittedAt: new Date().toISOString(), isResubmission: isResubmit },
+      ]);
       onComplete?.(isResubmit);
     }, 1400);
   };
 
   const handleResubmit = () => {
     setIsResubmit(true);
+    setAttempt((prev) => Math.min(prev + 1, maxAttempts));
     setPhase("working");
     setUploadedFile(null);
     setTextSubmission("");
@@ -205,26 +220,48 @@ export function AssignmentTaker({
                 <p style={{ ...S, fontSize: "10px", fontWeight: 600, color: "#8e8e96", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
                   Assignment Document
                 </p>
-                <a
-                  href={config.attachmentUrl || "#"}
-                  download
-                  className="flex items-center gap-3 p-4 rounded-lg border border-[#e2e2e5] hover:border-[#a68b5b] transition-colors bg-white group cursor-pointer"
-                >
-                  <div className="w-10 h-10 rounded bg-[#f3f3f5] flex items-center justify-center text-[#5a5a62] group-hover:bg-[#faf8f5] group-hover:text-[#a68b5b] transition-colors">
-                    <FileText size={20} />
+                {canDownloadDocument ? (
+                  <a
+                    href={config.attachmentUrl || "#"}
+                    download
+                    className="flex items-center gap-3 p-4 rounded-lg border border-[#e2e2e5] hover:border-[#a68b5b] transition-colors bg-white group cursor-pointer"
+                  >
+                    <div className="w-10 h-10 rounded bg-[#f3f3f5] flex items-center justify-center text-[#5a5a62] group-hover:bg-[#faf8f5] group-hover:text-[#a68b5b] transition-colors">
+                      <FileText size={20} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p style={{ ...S, fontSize: "13px", fontWeight: 600, color: "#0a1628" }} className="truncate">
+                        {config.attachmentName || "Assignment_Worksheet.pdf"}
+                      </p>
+                      <p style={{ ...S, fontSize: "11px", color: "#8e8e96" }}>
+                        Click to download
+                      </p>
+                    </div>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-[#5a5a62] group-hover:text-[#a68b5b] bg-[#f3f3f5] group-hover:bg-[#faf8f5]">
+                      <Upload size={14} className="rotate-180" />
+                    </div>
+                  </a>
+                ) : (
+                  <div
+                    className="flex items-center gap-3 p-4 rounded-lg border border-[#e2e2e5] bg-white opacity-60 cursor-not-allowed"
+                    aria-disabled="true"
+                  >
+                    <div className="w-10 h-10 rounded bg-[#f3f3f5] flex items-center justify-center text-[#5a5a62]">
+                      <Lock size={18} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p style={{ ...S, fontSize: "13px", fontWeight: 600, color: "#0a1628" }} className="truncate">
+                        {config.attachmentName || "Assignment_Worksheet.pdf"}
+                      </p>
+                      <p style={{ ...S, fontSize: "11px", color: "#8e8e96" }}>
+                        Download disabled
+                      </p>
+                    </div>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-[#5a5a62] bg-[#f3f3f5]">
+                      <Lock size={14} />
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p style={{ ...S, fontSize: "13px", fontWeight: 600, color: "#0a1628" }} className="truncate">
-                      {config.attachmentName || "Assignment_Worksheet.pdf"}
-                    </p>
-                    <p style={{ ...S, fontSize: "11px", color: "#8e8e96" }}>
-                      Click to download
-                    </p>
-                  </div>
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-[#5a5a62] group-hover:text-[#a68b5b] bg-[#f3f3f5] group-hover:bg-[#faf8f5]">
-                    <Upload size={14} className="rotate-180" />
-                  </div>
-                </a>
+                )}
               </div>
             )}
 
@@ -291,8 +328,8 @@ export function AssignmentTaker({
               <div className="mt-5 border border-[#d4a574]/40 rounded-lg overflow-hidden">
                 <div className="flex items-center gap-2 px-4 py-2.5 bg-[#fdf8f3] border-b border-[#d4a574]/30">
                   <Users size={13} className="text-[#a68b5b]" />
-                  <p style={{ ...S, fontSize: "11px", fontWeight: 700, color: "#a68b5b", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    Group Assignment
+                  <p style={{ ...S, fontSize: "11px", fontWeight: 700, color: "#a68b5b" }}>
+                    Group Assignment: {config.title}
                   </p>
                 </div>
                 <div className="px-4 py-3">
@@ -400,6 +437,9 @@ export function AssignmentTaker({
             <div className="flex items-center gap-4">
               <span style={{ ...S, fontSize: "12px", color: "#8e8e96" }}>
                 {answeredCount}/{questions.length} answered
+              </span>
+              <span className="px-2 py-1 rounded-md bg-[#f3f3f5] text-[#5a5a62]" style={{ ...S, fontSize: "11px", fontWeight: 600 }}>
+                Attempt {attempt} of {maxAttempts}
               </span>
               <button
                 onClick={() => setPhase("review")}
@@ -583,26 +623,48 @@ export function AssignmentTaker({
                 <p style={{ ...S, fontSize: "10px", fontWeight: 600, color: "#8e8e96", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
                   Assignment Document
                 </p>
-                <a
-                  href={config.attachmentUrl || "#"}
-                  download
-                  className="flex items-center gap-3 p-3 rounded-lg border border-[#e2e2e5] hover:border-[#a68b5b] transition-colors bg-white group cursor-pointer"
-                >
-                  <div className="w-10 h-10 rounded bg-[#f3f3f5] flex items-center justify-center text-[#5a5a62] group-hover:bg-[#faf8f5] group-hover:text-[#a68b5b] transition-colors">
-                    <FileText size={20} />
+                {canDownloadDocument ? (
+                  <a
+                    href={config.attachmentUrl || "#"}
+                    download
+                    className="flex items-center gap-3 p-3 rounded-lg border border-[#e2e2e5] hover:border-[#a68b5b] transition-colors bg-white group cursor-pointer"
+                  >
+                    <div className="w-10 h-10 rounded bg-[#f3f3f5] flex items-center justify-center text-[#5a5a62] group-hover:bg-[#faf8f5] group-hover:text-[#a68b5b] transition-colors">
+                      <FileText size={20} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p style={{ ...S, fontSize: "13px", fontWeight: 600, color: "#0a1628" }} className="truncate">
+                        {config.attachmentName || "Assignment_Worksheet.pdf"}
+                      </p>
+                      <p style={{ ...S, fontSize: "11px", color: "#8e8e96" }}>
+                        Click to download
+                      </p>
+                    </div>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-[#5a5a62] group-hover:text-[#a68b5b] bg-[#f3f3f5] group-hover:bg-[#faf8f5]">
+                      <Upload size={14} className="rotate-180" />
+                    </div>
+                  </a>
+                ) : (
+                  <div
+                    className="flex items-center gap-3 p-4 rounded-lg border border-[#e2e2e5] bg-white opacity-60 cursor-not-allowed"
+                    aria-disabled="true"
+                  >
+                    <div className="w-10 h-10 rounded bg-[#f3f3f5] flex items-center justify-center text-[#5a5a62]">
+                      <Lock size={18} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p style={{ ...S, fontSize: "13px", fontWeight: 600, color: "#0a1628" }} className="truncate">
+                        {config.attachmentName || "Assignment_Worksheet.pdf"}
+                      </p>
+                      <p style={{ ...S, fontSize: "11px", color: "#8e8e96" }}>
+                        Download disabled
+                      </p>
+                    </div>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-[#5a5a62] bg-[#f3f3f5]">
+                      <Lock size={14} />
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p style={{ ...S, fontSize: "13px", fontWeight: 600, color: "#0a1628" }} className="truncate">
-                      {config.attachmentName || "Assignment_Worksheet.pdf"}
-                    </p>
-                    <p style={{ ...S, fontSize: "11px", color: "#8e8e96" }}>
-                      Click to download
-                    </p>
-                  </div>
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-[#5a5a62] group-hover:text-[#a68b5b] bg-[#f3f3f5] group-hover:bg-[#faf8f5]">
-                    <Upload size={14} className="rotate-180" />
-                  </div>
-                </a>
+                )}
               </div>
             )}
 
@@ -742,12 +804,15 @@ export function AssignmentTaker({
     return (
       <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl w-full max-w-[440px] p-8 text-center">
-          <div className="w-16 h-16 rounded-full bg-[#f3f3f5] flex items-center justify-center mx-auto mb-5">
-            <Check size={28} className="text-[#5a5a62]" />
+          <div className="w-16 h-16 rounded-full bg-[#e8fbf0] flex items-center justify-center mx-auto mb-5">
+            <Check size={28} className="text-[#16a34a]" />
           </div>
           <h3 style={{ ...S, fontSize: "18px", fontWeight: 600, color: "#0a1628" }}>
-            {isResubmit ? "Resubmission Received" : "Assignment Submitted"}
+            {attempt === 1 ? "Assignment Submitted" : "Resubmission Received"}
           </h3>
+          <p style={{ ...S, fontSize: "11px", color: "#5a5a62", marginTop: 2, fontWeight: 600 }}>
+            Attempt {attempt} of {maxAttempts}
+          </p>
           <p style={{ ...S, fontSize: "13px", color: "#8e8e96", marginTop: 6, lineHeight: 1.5 }}>
             {grp ? (
               <>Submitted on behalf of <strong style={{ color: "#3a3a42" }}>{grp.groupName}</strong> · {grp.members.map(m => m.name).join(", ")}</>
@@ -760,12 +825,33 @@ export function AssignmentTaker({
               {answeredCount}/{questions.length} questions answered
             </p>
           )}
-          {isResubmit && (
+          {attemptHistory.length > 0 && (
+            <div className="mt-4 bg-[#fafafb] border border-[#ededf0] rounded-lg p-3 text-left">
+              <p style={{ ...S, fontSize: "12px", color: "#0a1628", fontWeight: 700 }}>Submission Attempts</p>
+              <div className="flex flex-col gap-2 mt-2">
+                {attemptHistory
+                  .slice()
+                  .reverse()
+                  .map((t) => (
+                    <div key={`${t.attempt}-${t.submittedAt}`} className="flex items-center justify-between gap-3">
+                      <span style={{ ...S, fontSize: "12px", color: "#5a5a62", fontWeight: 600 }}>
+                        Attempt {t.attempt}
+                        {t.isResubmission ? " (Resub.)" : ""}
+                      </span>
+                      <span style={{ ...S, fontSize: "11px", color: "#8e8e96" }}>
+                        {new Date(t.submittedAt).toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+          {attempt > 1 && (
             <p style={{ ...S, fontSize: "11px", color: "#a68b5b", marginTop: 8 }}>
               Your previous grade has been cleared. Your instructor will re-grade this submission.
             </p>
           )}
-          {config.allowResubmit && (
+          {config.allowResubmit && attempt < maxAttempts && (
             <button
               onClick={handleResubmit}
               className="w-full mt-4 py-2.5 rounded-lg border border-[#0a1628] text-[#0a1628] hover:bg-[#0a1628] hover:text-white transition-colors flex items-center justify-center gap-2"

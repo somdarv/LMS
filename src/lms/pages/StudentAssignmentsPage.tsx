@@ -38,7 +38,7 @@ interface Assignment {
   dueTime: string;
   maxPoints: number;
   submissionType: SubmissionType;
-  deliveryFormat: DeliveryFormat;
+  deliveryFormat: DeliveryFormat | "document";
   assignmentType: string;
   status: WorkStatus;
   week?: number;
@@ -46,6 +46,9 @@ interface Assignment {
   feedback?: string;
   submittedAt?: string;
   fileName?: string;
+  attachmentName?: string;
+  attachmentUrl?: string;
+  allowDocumentDownload?: boolean;
   allowLate: boolean;
   latePenalty?: number;
   allowResubmit?: boolean;
@@ -158,6 +161,20 @@ const assignments: Assignment[] = [
     submittedAt: "Feb 22, 2026", fileName: "CompanyAccounts_KojoManu.pdf", allowLate: false,
     rubric: [], questions: [],
   },
+  // Course 2: FA L2 — Resubmission Demo (file upload, resubmit allowed)
+  {
+    id: 206, title: "Resubmission Demo: Consolidation Working", courseId: 2, course: "Financial Accounting Level 2 - Weekend", courseCode: "FA L2",
+    description: "Submit a first draft, then use Edit & Resubmit to demo multiple attempts.",
+    instructions: "Upload your consolidation working (any format). After submitting, click “Edit & Resubmit” to submit an improved version (demo).",
+    dueDate: "Mar 28, 2026", dueTime: "23:59", maxPoints: 20, submissionType: "file", deliveryFormat: "instructions", assignmentType: "exercise",
+    status: "Not Started", week: 3, allowLate: false, allowResubmit: true,
+    rubric: [
+      { criterion: "Structure", description: "Clear working layout and headings", points: 5 },
+      { criterion: "Calculations", description: "Accurate figures and adjustments", points: 10 },
+      { criterion: "Presentation", description: "Readable and well-organised", points: 5 },
+    ],
+    questions: [],
+  },
   // Course 3: MA — Case Study (active, text entry long-form)
   {
     id: 301, title: "Case Study: Cost Analysis", courseId: 3, course: "Management Accounting", courseCode: "MA L1",
@@ -215,10 +232,79 @@ const assignments: Assignment[] = [
     submittedAt: "Feb 14, 2026", fileName: "CostClass_KojoManu.pdf", allowLate: false,
     rubric: [], questions: [],
   },
+  // Course 1: FA L1 — Resubmission demo (submitted, can resubmit)
+  {
+    id: 106, title: "Trial Balance Corrections (Resubmission)", courseId: 1, course: "Financial Accounting Level 1", courseCode: "FA L1",
+    description: "Correct errors in a trial balance and resubmit improved workings.",
+    instructions: "Review the feedback from your first attempt and correct the errors in your trial balance. Upload your corrected workings as a PDF.",
+    dueDate: "Mar 25, 2026", dueTime: "23:59", maxPoints: 40, submissionType: "file", deliveryFormat: "instructions", assignmentType: "exercise",
+    status: "Submitted", week: 3, submittedAt: "Mar 10, 2026", fileName: "TrialBal_Attempt1_KojoManu.pdf",
+    allowLate: false, allowResubmit: true,
+    feedback: "Your suspense account has two posting errors. Please review and resubmit with corrections.",
+    rubric: [
+      { criterion: "Error Identification", description: "Correctly identifies all errors in original trial balance", points: 15 },
+      { criterion: "Suspense Account", description: "Accurate preparation of suspense account", points: 15 },
+      { criterion: "Corrected Trial Balance", description: "Correct final trial balance that balances", points: 10 },
+    ],
+    questions: [],
+  },
+  // Course 2: FA L2 — Group Assignment (instructor-assigned)
+  {
+    id: 402, title: "Consolidated Financial Statements Group Project", courseId: 2, course: "Financial Accounting Level 2 - Weekend", courseCode: "FA L2",
+    description: "Work with your group to prepare consolidated financial statements for a parent-subsidiary scenario.",
+    instructions: "Working as a group, prepare consolidated financial statements for the Accra Holdings Group. Include:\n\n1. Consolidated Statement of Financial Position\n2. Consolidated Income Statement\n3. Goodwill calculation and impairment review\n4. Elimination of inter-company transactions\n\nSubmit one file per group (PDF or DOCX). All group members receive the same grade.",
+    dueDate: "Apr 10, 2026", dueTime: "23:59", maxPoints: 60, submissionType: "file", deliveryFormat: "instructions", assignmentType: "case_study",
+    status: "Not Started", week: 5, allowLate: false, allowResubmit: true,
+    groupConfig: { enabled: true, mode: "instructor_assigned", maxGroupSize: 4 },
+    rubric: [
+      { criterion: "Consolidation Adjustments", description: "Correct elimination of inter-company balances and transactions", points: 20 },
+      { criterion: "Goodwill & NCI", description: "Accurate goodwill calculation and non-controlling interest treatment", points: 15 },
+      { criterion: "Financial Statements", description: "Complete and correctly formatted consolidated statements", points: 15 },
+      { criterion: "Group Commentary", description: "Clear explanatory notes on consolidation approach", points: 10 },
+    ],
+    questions: [],
+  },
+  // Course 3: MA L1 — Group Assignment (self-enroll)
+  {
+    id: 403, title: "Variance Analysis Group Report", courseId: 3, course: "Management Accounting", courseCode: "MA L1",
+    description: "Collaborate with your group to analyse standard cost variances for a manufacturing scenario.",
+    instructions: "Working as a group, analyse the standard and actual cost data for TechParts Manufacturing Ltd and prepare a comprehensive variance analysis report.\n\nCover:\n1. Material price and usage variances\n2. Labour rate and efficiency variances\n3. Fixed overhead expenditure and volume variances\n4. Recommendations for management action\n\nSubmit one file per group. All group members receive the same grade.",
+    dueDate: "Apr 15, 2026", dueTime: "23:59", maxPoints: 50, submissionType: "file", deliveryFormat: "instructions", assignmentType: "case_study",
+    status: "In Progress", week: 4, allowLate: false,
+    groupConfig: { enabled: true, mode: "self_enrollment", maxGroupSize: 5 },
+    rubric: [
+      { criterion: "Material Variances", description: "Correct calculation and interpretation of material variances", points: 12 },
+      { criterion: "Labour Variances", description: "Correct calculation and interpretation of labour variances", points: 12 },
+      { criterion: "Overhead Variances", description: "Correct calculation of fixed overhead variances", points: 12 },
+      { criterion: "Recommendations", description: "Practical and well-justified management recommendations", points: 14 },
+    ],
+    questions: [],
+  },
+  // Course 3: MA L1 — Resubmission demo (graded, can still resubmit)
+  {
+    id: 304, title: "Break-Even Rework Exercise", courseId: 3, course: "Management Accounting", courseCode: "MA L1",
+    description: "Rework break-even calculations after instructor feedback for a better grade.",
+    instructions: "Review the feedback on your original submission and rework the break-even analysis. Upload corrected workings as a PDF.",
+    dueDate: "Mar 30, 2026", dueTime: "23:59", maxPoints: 80, submissionType: "file", deliveryFormat: "instructions", assignmentType: "exercise",
+    status: "Graded", week: 2, grade: 55, submittedAt: "Mar 12, 2026", fileName: "BreakEven_Attempt1_KojoManu.pdf",
+    allowLate: false, allowResubmit: true,
+    feedback: "Your contribution margin calculation is correct but the break-even point in revenue has an arithmetic error. Resubmit for a better grade.",
+    rubric: [
+      { criterion: "Break-Even Calculation", description: "Accurate BEP in units and revenue", points: 30 },
+      { criterion: "Contribution Analysis", description: "Correct contribution margin per unit and ratio", points: 25 },
+      { criterion: "Margin of Safety", description: "Correct margin of safety calculation", points: 15 },
+      { criterion: "Presentation", description: "Clear workings and professional layout", points: 10 },
+    ],
+    questions: [],
+  },
 ];
 
-const isActive = (s: WorkStatus) => s === "Not Started" || s === "In Progress";
-const isHistory = (s: WorkStatus) => s === "Submitted" || s === "Graded";
+const isActive = (a: Assignment) =>
+  a.status === "Not Started" ||
+  a.status === "In Progress" ||
+  (a.status === "Submitted" && !!a.allowResubmit);
+const isHistory = (a: Assignment) =>
+  a.status === "Graded" || (a.status === "Submitted" && !a.allowResubmit);
 
 const statusStyle = (s: WorkStatus): string => {
   switch (s) {
@@ -234,11 +320,12 @@ const statusLabel = (s: WorkStatus, grade?: number, max?: number): string => {
   return s;
 };
 
-const formatLabel: Record<DeliveryFormat, string> = {
+const formatLabel: Record<DeliveryFormat | "document", string> = {
   instructions: "Written Instructions",
   short: "Short Answer",
   long: "Long Answer",
   bulk: "On-Platform Questions",
+  document: "Document Upload",
 };
 
 export function StudentAssignmentsPage() {
@@ -258,10 +345,25 @@ export function StudentAssignmentsPage() {
     return result;
   });
 
+  // Demo end-to-end: persist a created document assignment from CreateAssignmentPage
+  // so students can open it here.
+  const [createdAssignments] = useState<Assignment[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = window.localStorage.getItem("lms:createdAssignments");
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed as Assignment[];
+    } catch {
+      return [];
+    }
+  });
+
   const getAssignment = (a: Assignment): Assignment => ({ ...a, ...assignmentStates[a.id] });
-  const allAssignments = assignments.map(getAssignment);
-  const activeAssignments = allAssignments.filter((a) => isActive(a.status) && (!courseFilter || a.courseId === courseFilter));
-  const historyAssignments = allAssignments.filter((a) => isHistory(a.status) && (!courseFilter || a.courseId === courseFilter));
+  const allAssignments = [...createdAssignments, ...assignments].map(getAssignment);
+  const activeAssignments = allAssignments.filter((a) => isActive(a) && (!courseFilter || a.courseId === courseFilter));
+  const historyAssignments = allAssignments.filter((a) => isHistory(a) && (!courseFilter || a.courseId === courseFilter));
 
   const enrolledCourses = COURSES.filter((c) => [1, 2, 3].includes(c.id)).map((c) => ({
     ...c,
@@ -291,6 +393,9 @@ export function StudentAssignmentsPage() {
       allowLate: a.allowLate,
       latePenalty: a.latePenalty,
       allowResubmit: a.allowResubmit,
+      allowDocumentDownload: a.allowDocumentDownload,
+      attachmentName: a.attachmentName,
+      attachmentUrl: a.attachmentUrl,
       week: a.week,
       groupConfig: a.groupConfig,
       currentStudentGroup: grp != null ? {
@@ -359,7 +464,9 @@ export function StudentAssignmentsPage() {
           <div className="bg-white rounded-2xl w-full max-w-[600px] max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#ededf0] sticky top-0 bg-white z-10">
               <div className="flex-1 min-w-0 pr-4">
-                <p style={{ fontFamily: "Inter, sans-serif", fontSize: "15px", fontWeight: 600, color: "#0a1628" }}>{selectedAssignment.title}</p>
+                <p style={{ fontFamily: "Inter, sans-serif", fontSize: "15px", fontWeight: 600, color: "#0a1628" }}>
+                  {selectedAssignment.groupConfig?.enabled ? `Group Assignment: ${selectedAssignment.title}` : selectedAssignment.title}
+                </p>
                 <p style={{ fontFamily: "Inter, sans-serif", fontSize: "11px", color: "#8e8e96", marginTop: 2 }}>
                   {selectedAssignment.course}{selectedAssignment.week ? ` · Week ${selectedAssignment.week}` : ""}
                 </p>
@@ -433,7 +540,7 @@ export function StudentAssignmentsPage() {
               )}
 
               {/* Start button */}
-              {isActive(selectedAssignment.status) && (
+              {isActive(selectedAssignment) && (
                 <button
                   onClick={() => { setTakingAssignment(selectedAssignment); setSelectedAssignment(null); }}
                   className="w-full py-2.5 rounded-lg bg-[#0a1628] text-[#faf8f5] hover:bg-[#0d1e35] transition-colors"
@@ -508,7 +615,9 @@ function AssignmentRow({ a, onClick }: { a: Assignment; onClick: () => void }) {
             : <ClipboardList size={16} className="text-[#8e8e96]" />}
         </div>
         <div className="flex-1 min-w-0">
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: "13px", fontWeight: 600, color: "#0a1628" }}>{a.title}</p>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: "13px", fontWeight: 600, color: "#0a1628" }}>
+            {a.groupConfig?.enabled ? `Group Assignment: ${a.title}` : a.title}
+          </p>
           <div className="flex items-center gap-3 mt-1.5">
             <span className="text-[#b0b0b5]" style={{ fontFamily: "Inter, sans-serif", fontSize: "11px" }}>{a.courseCode}</span>
             {a.week && <span className="text-[#b0b0b5]" style={{ fontFamily: "Inter, sans-serif", fontSize: "11px" }}>Week {a.week}</span>}

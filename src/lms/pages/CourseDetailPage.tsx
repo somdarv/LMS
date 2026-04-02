@@ -25,12 +25,12 @@ import {
   Plus,
 } from "lucide-react";
 import { AlmsHeader } from "../components/AlmsHeader";
-import { ProfileBanner } from "../components/ProfileBanner";
 import { CourseSidebar, type CourseTab } from "../components/CourseSidebar";
 import { GroupsTab } from "../components/GroupsTab";
 import { COURSES } from "../data/courses";
 import { courseDisplayTitleWithTrack } from "../lib/courseLabels";
 import { getCourseGroups } from "../data/groups";
+import { getCourseStudents } from "../data/students";
 
 // Mock Data
 const INSTRUCTOR_MOCK_ASSIGNMENTS = [
@@ -75,6 +75,7 @@ export function CourseDetailPage() {
   const course = COURSES.find((c) => c.id === courseId) ?? COURSES[0];
   
   const [activeTab, setActiveTab] = useState<CourseTab>("overview");
+  const [communicationsSubTab, setCommunicationsSubTab] = useState<"announcements" | "discussions">("announcements");
   const [openModules, setOpenModules] = useState<number[]>([1]);
 
   const toggleModule = (moduleId: number) => {
@@ -92,8 +93,7 @@ export function CourseDetailPage() {
         { label: "Home" },
         { label: "My Courses", href: "/instructor/courses" },
         { label: courseTitle },
-      ]} />
-      <ProfileBanner name="Prof Mensah Oduro" role="Instructor" />
+      ]} instituteName="SOMDA INSTITUTE OF PROFESSIONAL STUDIES" showAvatar />
 
       <div className="flex-1 flex gap-6 px-6 py-6 max-w-[1200px] mx-auto w-full items-start">
         <CourseSidebar
@@ -545,11 +545,11 @@ export function CourseDetailPage() {
               <GroupsTab
                 courseId={courseId}
                 track={track as "Weekday" | "Weekend" | "All"}
-                students={INSTRUCTOR_MOCK_STUDENTS.map((s) => ({
+                students={getCourseStudents(courseId, track as "Weekday" | "Weekend" | "All").map((s) => ({
                   id: s.id,
                   name: s.name,
-                  initials: s.name.split(" ").map((n: string) => n[0]).join(""),
-                  cohort: (s.id % 2 === 0 ? "Weekend" : "Weekday") as "Weekday" | "Weekend",
+                  initials: s.initials,
+                  cohort: (track === "Weekend" ? "Weekend" : "Weekday") as "Weekday" | "Weekend",
                 }))}
               />
             </div>
@@ -560,19 +560,45 @@ export function CourseDetailPage() {
           {/* ════════════════════════════════════════════════════════════ */}
           {activeTab === "communications" && (
             <div className="flex flex-col gap-5">
-              <div className="flex items-center justify-between">
-                <h2 style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: "15px", color: "#0a1628" }}>Announcements & Discussions</h2>
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => navigate("/instructor/communications")}
-                  className="flex items-center gap-1.5 px-3 h-8 rounded bg-[#0a1628] text-white hover:bg-[#0d1e35] transition-colors"
-                  style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 600 }}
+                  onClick={() => setCommunicationsSubTab("announcements")}
+                  className={`px-3 py-1.5 rounded-lg border transition-colors ${communicationsSubTab === "announcements" ? "bg-[#0a1628] border-[#0a1628] text-white" : "bg-white border-gray-200 text-[#6c6c6c] hover:bg-gray-50"}`}
+                  style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 700 }}
                 >
-                  <Plus size={14} /> New Announcement
+                  Announcements
+                </button>
+                <button
+                  onClick={() => setCommunicationsSubTab("discussions")}
+                  className={`px-3 py-1.5 rounded-lg border transition-colors ${communicationsSubTab === "discussions" ? "bg-[#0a1628] border-[#0a1628] text-white" : "bg-white border-gray-200 text-[#6c6c6c] hover:bg-gray-50"}`}
+                  style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 700 }}
+                >
+                  Discussions
                 </button>
               </div>
+              <div className="flex items-center justify-between">
+                <h2 style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: "15px", color: "#0a1628" }}>
+                  {communicationsSubTab === "announcements" ? "Announcements" : "Discussions"}
+                </h2>
+                {communicationsSubTab === "announcements" && (
+                  <button
+                    onClick={() => navigate("/instructor/communications")}
+                    className="flex items-center gap-1.5 px-3 h-8 rounded bg-[#0a1628] text-white hover:bg-[#0d1e35] transition-colors"
+                    style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 600 }}
+                  >
+                    <Plus size={14} /> New Announcement
+                  </button>
+                )}
+              </div>
 
-              {INSTRUCTOR_MOCK_COMMUNICATIONS.map((c) => (
-                <div key={c.id} className={`bg-white rounded-xl border ${c.urgent ? "border-[#d4a574]" : "border-gray-200"} p-5 flex gap-4 relative overflow-hidden`}>
+              {(communicationsSubTab === "announcements"
+                ? INSTRUCTOR_MOCK_COMMUNICATIONS.filter((c) => c.type === "announcement")
+                : INSTRUCTOR_MOCK_COMMUNICATIONS.filter((c) => c.type === "discussion")
+              ).map((c) => (
+                <div
+                  key={c.id}
+                  className={`bg-white rounded-xl border ${c.urgent ? "border-[#d4a574]" : "border-gray-200"} p-5 flex gap-4 relative overflow-hidden`}
+                >
                   {c.urgent && <div className="absolute top-0 left-0 bottom-0 w-1 bg-[#d4a574]" />}
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${c.type === "announcement" ? "bg-[rgba(212,165,116,0.15)] text-[#d4a574]" : "bg-blue-50 text-blue-500"}`}>
                     {c.type === "announcement" ? <AlertTriangle size={18} /> : <MessageCircle size={18} />}

@@ -3,9 +3,9 @@ import { useParams, useNavigate } from "react-router";
 import {
   ArrowLeft, ChevronRight, Check, X, Send, Download,
   ClipboardList, AlertTriangle, Clock, CheckCircle2, Users2,
+  RotateCcw,
 } from "lucide-react";
 import { AlmsHeader } from "../components/AlmsHeader";
-import { ProfileBanner } from "../components/ProfileBanner";
 import { InstructorSidebar } from "../components/InstructorSidebar";
 import {
   GRADING_DATA, autoScore,
@@ -152,13 +152,14 @@ function SubmissionList({
 // ─── Manual grader (right panel) ──────────────────────────────────────────────
 
 function ManualGrader({
-  grading, submissions, selectedId, onSave, onSaveAndNext,
+  grading, submissions, selectedId, onSave, onSaveAndNext, allowResubmit,
 }: {
   grading: AssignmentGrading;
   submissions: Submission[];
   selectedId: string | null;
   onSave: (id: string, score: number, rubric: Record<string, number>, feedback: string) => void;
   onSaveAndNext: (id: string, score: number, rubric: Record<string, number>, feedback: string) => void;
+  allowResubmit?: boolean;
 }) {
   const sub = submissions.find(s => s.id === selectedId);
 
@@ -242,6 +243,14 @@ function ManualGrader({
             <Check size={12} className="text-[#d4a574]" />
             <span style={{ ...S, fontSize: "11px", fontWeight: 700, color: "#0a1628" }}>
               Previously graded: {sub.score}/{maxTotal}
+            </span>
+          </div>
+        )}
+        {allowResubmit && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#d4a574]/10 border border-[#d4a574]/30">
+            <RotateCcw size={11} className="text-[#a68b5b]" />
+            <span style={{ ...S, fontSize: "11px", fontWeight: 600, color: "#0a1628" }}>
+              Attempt {sub.status === "graded" ? 1 : 1} · Resubmission allowed
             </span>
           </div>
         )}
@@ -361,6 +370,14 @@ function ManualGrader({
             )}
             {!isComplete && (
               <span style={{ ...S, fontSize: "11px", color: "#b0b0b0" }}>Fill all criteria to save</span>
+            )}
+            {allowResubmit && isComplete && (
+              <button
+                onClick={handleSave}
+                className="flex items-center gap-2 px-4 py-2.5 border border-[#d4a574] text-[#d4a574] hover:bg-[#d4a574]/10 transition-colors ml-auto"
+                style={{ ...S, fontSize: "12px", fontWeight: 600 }}>
+                <RotateCcw size={13} /> Request Resubmission
+              </button>
             )}
           </div>
         </div>
@@ -636,8 +653,7 @@ export function GradingCenterPage() {
 
   return (
     <div className="min-h-screen bg-[#f5f6f8] flex flex-col">
-      <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "Assignments" }, { label: "Grade" }]} />
-      <ProfileBanner name="Prof Mensah Oduro" role="Instructor" />
+      <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "Assignments" }, { label: "Grade" }]} instituteName="SOMDA INSTITUTE OF PROFESSIONAL STUDIES" showAvatar />
 
       <div className="flex-1 flex gap-6 px-6 py-6 max-w-[1200px] mx-auto w-full">
         <InstructorSidebar />
@@ -660,6 +676,12 @@ export function GradingCenterPage() {
                     style={{ ...S, fontSize: "11px", fontWeight: 700 }}>
                     {METHOD_LABELS[baseData.method]}
                   </span>
+                  {baseData.allowResubmit && (
+                    <span className="px-2 py-0.5 bg-[#d4a574]/30 text-white border border-[#d4a574]/50 flex items-center gap-1"
+                      style={{ ...S, fontSize: "11px", fontWeight: 700 }}>
+                      <RotateCcw size={10} /> Resubmission Allowed
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="text-right flex-shrink-0">
@@ -704,6 +726,7 @@ export function GradingCenterPage() {
                 selectedId={selectedId}
                 onSave={handleSave}
                 onSaveAndNext={handleSaveAndNext}
+                allowResubmit={baseData.allowResubmit}
               />
             )}
 

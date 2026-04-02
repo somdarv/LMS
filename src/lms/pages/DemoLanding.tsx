@@ -70,9 +70,9 @@ export function DemoLanding() {
             <path d="M13.5 2L3 7.5V19.5L13.5 25L24 19.5V7.5L13.5 2Z" stroke="#FAF8F5" strokeWidth="2" strokeLinejoin="round" />
             <path d="M13.5 2V25M3 7.5L24 19.5M24 7.5L3 19.5" stroke="#FAF8F5" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
-          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 700, fontSize: "20px", color: "#FAF8F5" }}>ALMS</span>
+          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 700, fontSize: "20px", color: "#FAF8F5" }}>SOMDA INSTITUTE OF PROFESSIONAL STUDIES</span>
         </div>
-        <span className="text-[#faf8f5] opacity-60 text-sm" style={{ fontFamily: "Inter, sans-serif" }}>ALMS — Full Platform Demo</span>
+        <span className="text-[#faf8f5] opacity-60 text-sm" style={{ fontFamily: "Inter, sans-serif" }}>SOMDA INSTITUTE OF PROFESSIONAL STUDIES — Full Platform Demo</span>
       </header>
 
       <div className="max-w-4xl mx-auto px-6 py-10">

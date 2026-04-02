@@ -7,7 +7,6 @@ import {
   AlertCircle, RefreshCw,
 } from "lucide-react";
 import { AlmsHeader } from "../components/AlmsHeader";
-import { ProfileBanner } from "../components/ProfileBanner";
 import { InstructorSidebar } from "../components/InstructorSidebar";
 import { COURSES } from "../data/courses";
 import { useLMS, ClassSession, COURSE_SCHEDULE_DEFAULTS } from "../context/LMSContext";
@@ -505,8 +504,7 @@ export function CalendarPage() {
 
   return (
     <div className="min-h-screen bg-[#f5f6f8] flex flex-col">
-      <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "Dashboard" }, { label: "Calendar" }]} />
-      <ProfileBanner name="Prof Mensah Oduro" role="Instructor" />
+      <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "Dashboard" }, { label: "Calendar" }]} instituteName="SOMDA INSTITUTE OF PROFESSIONAL STUDIES" showAvatar />
 
       {showModal && (
         <SessionModal

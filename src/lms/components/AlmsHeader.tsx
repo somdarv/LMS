@@ -23,7 +23,7 @@ export function AlmsHeader({ breadcrumb, instituteName, showAvatar, avatarUrl }:
             <path d="M13.5 2V25M3 7.5L24 19.5M24 7.5L3 19.5" stroke="#FAF8F5" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
           <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 700, fontSize: instituteName ? "15px" : "22px", color: "#FAF8F5", letterSpacing: "0.5px" }}>
-            {instituteName ?? "ALMS"}
+            {instituteName ?? "SOMDA INSTITUTE OF PROFESSIONAL STUDIES"}
           </span>
         </button>
         <div className="flex items-center gap-5">

@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import type { GroupMode } from "../data/groups";
 import { AlmsHeader } from "../components/AlmsHeader";
-import { ProfileBanner } from "../components/ProfileBanner";
 import { InstructorSidebar } from "../components/InstructorSidebar";
 import { COURSES } from "../data/courses";
 import { courseDisplayTitleWithTrack, courseSelectLabel, courseTitleWithTracks } from "../lib/courseLabels";
@@ -107,6 +106,33 @@ export function CreateAssignmentPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const preselectedCourseId = searchParams.get("courseId");
+
+  // Change #14: Assignment creation must be initiated from a course page
+  if (!preselectedCourseId) {
+    return (
+      <div className="min-h-screen bg-[#f5f6f8] flex flex-col">
+        <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "Create Assignment" }]} instituteName="SOMDA INSTITUTE OF PROFESSIONAL STUDIES" showAvatar />
+        <div className="flex-1 flex gap-6 px-6 py-6 max-w-[1200px] mx-auto w-full">
+          <InstructorSidebar />
+          <main className="flex-1 min-w-0 flex flex-col items-center justify-center gap-4 py-20">
+            <ClipboardList size={48} className="text-gray-300" />
+            <h2 style={{ ...S, fontSize: "18px", fontWeight: 700, color: "#0a1628" }}>No course selected</h2>
+            <p style={{ ...S, fontSize: "13px", color: "#6c6c6c", textAlign: "center", maxWidth: 400 }}>
+              Assignments must be created from within a course. Please navigate to a course first and create the assignment from there.
+            </p>
+            <button
+              onClick={() => navigate("/instructor/courses")}
+              className="mt-2 px-5 py-2 bg-[#0a1628] text-white hover:bg-[#0a1628]/90 transition-colors"
+              style={{ ...S, fontSize: "13px", fontWeight: 600 }}
+            >
+              Go to My Courses
+            </button>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
   const questionFileRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep]                     = useState(0);
@@ -135,6 +161,8 @@ export function CreateAssignmentPage() {
 
   // Step 1: Resubmit
   const [allowResubmit, setAllowResubmit] = useState(false);
+  // Step 3: Document download permission
+  const [allowDocumentDownload, setAllowDocumentDownload] = useState(true);
 
   // Step 2: Marking rubric
   const [rubricRows, setRubricRows]           = useState<RubricRow[]>([]);
@@ -208,12 +236,81 @@ export function CreateAssignmentPage() {
     return true;
   };
 
+  const handlePublish = () => {
+    // Demo persistence: store created doc permissions so AssignmentTaker can enforce them.
+    if (typeof window === "undefined") return;
+    try {
+      const selectedCourseId = Number(selectedCourse);
+      const course = COURSES.find((c) => c.id === selectedCourseId);
+      const courseName = course?.title ?? "Course";
+      const courseCode = course?.shortCode ?? "COURSE";
+
+      const attachmentUrl =
+        answerFormat === "document" && questionFile ? URL.createObjectURL(questionFile) : undefined;
+
+      const newAssignment = {
+        id: Date.now(),
+        title,
+        courseId: selectedCourseId,
+        course: courseName,
+        courseCode,
+        description,
+        instructions,
+        dueDate,
+        dueTime,
+        maxPoints: Number(maxScore),
+        submissionType,
+        deliveryFormat: answerFormat === "document" ? "document" : answerFormat,
+        questions:
+          answerFormat === "bulk"
+            ? extractedQs.map((q) => ({
+                id: q.id,
+                type: q.type,
+                text: q.text,
+                options: q.options,
+                correctOption: q.correctOption,
+                correctAnswer: q.correctAnswer,
+              }))
+            : [],
+        assignmentType,
+        status: "Not Started",
+        allowLate,
+        latePenalty: allowLate ? Number(latePenalty) : undefined,
+        allowResubmit: allowResubmit ? true : undefined,
+        week: undefined,
+        rubric: rubricRows.map((r) => ({ criterion: r.criterion, description: r.description, points: r.points })),
+        groupConfig: isGroupAssignment
+          ? {
+              enabled: true,
+              mode: groupMode,
+              maxGroupSize: Number(maxGroupSize),
+              groupFormationDeadline:
+                groupMode === "self_enrollment" && groupFormationDeadline ? groupFormationDeadline : undefined,
+            }
+          : undefined,
+        // Document attachment permission + metadata
+        allowDocumentDownload: answerFormat === "document" ? allowDocumentDownload : undefined,
+        attachmentName: attachmentUrl && questionFile ? questionFile.name : undefined,
+        attachmentUrl,
+      };
+
+      const storageKey = "lms:createdAssignments";
+      const raw = window.localStorage.getItem(storageKey);
+      const prev = raw ? JSON.parse(raw) : [];
+      const next = Array.isArray(prev) ? [...prev, newAssignment] : [newAssignment];
+      window.localStorage.setItem(storageKey, JSON.stringify(next));
+    } catch {
+      // ignore demo persistence failures
+    }
+
+    setPublished(true);
+  };
+
   // ── Published success screen ─────────────────────────────────────────────────
   if (published) {
     return (
       <div className="min-h-screen bg-[#f5f6f8] flex flex-col">
-        <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "My Courses" }, { label: "Create Assignment" }]} />
-        <ProfileBanner name="Prof Mensah Oduro" role="Instructor" />
+        <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "My Courses" }, { label: "Create Assignment" }]} instituteName="SOMDA INSTITUTE OF PROFESSIONAL STUDIES" showAvatar />
         <div className="flex-1 flex gap-6 px-6 py-6 max-w-[1200px] mx-auto w-full">
           <InstructorSidebar />
           <main className="flex-1 flex items-center justify-center">
@@ -244,6 +341,11 @@ export function CreateAssignmentPage() {
               {allowResubmit && (
                 <p style={{ ...S, fontSize: "12px", color: "#6c6c6c", marginTop: 4 }}>
                   Resubmission allowed until deadline
+                </p>
+              )}
+              {answerFormat === "document" && (
+                <p style={{ ...S, fontSize: "12px", color: "#6c6c6c", marginTop: 4 }}>
+                  Document download for students: {allowDocumentDownload ? "Allowed" : "Disabled"}
                 </p>
               )}
               <p style={{ ...S, fontSize: "12px", color: "#6c6c6c", marginTop: 4 }}>
@@ -277,8 +379,7 @@ export function CreateAssignmentPage() {
 
   return (
     <div className="min-h-screen bg-[#f5f6f8] flex flex-col">
-      <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "My Courses", href: "/instructor/courses" }, { label: "Create Assignment" }]} />
-      <ProfileBanner name="Prof Mensah Oduro" role="Instructor" />
+      <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "My Courses", href: "/instructor/courses" }, { label: "Create Assignment" }]} instituteName="SOMDA INSTITUTE OF PROFESSIONAL STUDIES" showAvatar />
 
       <div className="flex-1 flex gap-6 px-6 py-6 max-w-[1200px] mx-auto w-full">
         <InstructorSidebar />
@@ -1017,6 +1118,27 @@ export function CreateAssignmentPage() {
                       )}
                     </div>
 
+              {/* ── Document download toggle ── */}
+              <div className="flex items-center justify-between gap-4 p-4 bg-[#faf8f5] border border-[#d4a574]/30 rounded-lg">
+                <div className="min-w-0">
+                  <p style={{ ...S, fontSize: "13px", fontWeight: 700, color: "#0a1628", lineHeight: 1.3 }}>
+                    Students can download the document
+                  </p>
+                  <p style={{ ...S, fontSize: "11px", color: "#6c6c6c", marginTop: 4, lineHeight: 1.4 }}>
+                    Allow learners to download the uploaded worksheet before submitting.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAllowDocumentDownload((v) => !v)}
+                  disabled={!questionFile}
+                  className={`w-11 h-6 rounded-full transition-all relative flex-shrink-0 ${allowDocumentDownload ? "bg-[#d4a574]" : "bg-gray-200"} disabled:opacity-50 disabled:cursor-not-allowed`}
+                  aria-pressed={allowDocumentDownload}
+                >
+                  <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${allowDocumentDownload ? "left-[22px]" : "left-0.5"}`} />
+                </button>
+              </div>
+
                     <div>
                       <label style={{ ...S, fontSize: "13px", fontWeight: 600, color: "#0a1628", display: "block", marginBottom: 8 }}>
                         Brief Instructions <span style={{ ...S, fontSize: "11px", fontWeight: 400, color: "#6c6c6c" }}>(optional)</span>
@@ -1278,7 +1400,7 @@ export function CreateAssignmentPage() {
                 </button>
               ) : (
                 <button
-                  onClick={() => setPublished(true)}
+                  onClick={handlePublish}
                   className="flex items-center gap-2 px-5 h-[47px] bg-[#0a1628] text-white hover:bg-[#0d1e35] transition-colors"
                   style={{ ...S, fontWeight: 600, fontSize: "14px" }}
                 >
