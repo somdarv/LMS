@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useState, useRef, type ReactNode } from "react";
+import { useNavigate, useSearchParams, useParams } from "react-router";
 import {
   ChevronLeft, ChevronRight, Check, FileText, Plus, Trash2,
   Clock, Target, RefreshCw, Shuffle, Eye, AlertCircle, ArrowLeft,
@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { AlmsHeader } from "../components/AlmsHeader";
 import { InstructorSidebar } from "../components/InstructorSidebar";
+import { CoursePageShell } from "../components/CoursePageShell";
 import { COURSES } from "../data/courses";
 import { courseSelectLabel, courseTitleWithTracks } from "../lib/courseLabels";
 
@@ -215,7 +216,23 @@ function QuestionCard({ question, index, onChange, onDelete }: {
 export function CreateQuizPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const preselectedCourseId = searchParams.get("courseId");
+  const { id: routeCourseId } = useParams<{ id: string }>();
+  const preselectedCourseId = routeCourseId || searchParams.get("courseId");
+  const isCourseScoped = !!routeCourseId;
+
+  const Shell = ({ children }: { children: ReactNode }) =>
+    isCourseScoped ? (
+      <CoursePageShell activeTab="quizzes" breadcrumbSuffix="Create Quiz">{children}</CoursePageShell>
+    ) : (
+      <div className="min-h-screen bg-[#f5f6f8] flex flex-col">
+        <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "My Courses", href: "/instructor/courses" }, { label: "Create Quiz" }]} instituteName="SOMDA INSTITUTE OF PROFESSIONAL STUDIES" showAvatar />
+        <div className="flex-1 flex gap-6 px-6 py-6 max-w-[1200px] mx-auto w-full">
+          <InstructorSidebar />
+          {children}
+        </div>
+      </div>
+    );
+
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep]                     = useState(0);
@@ -287,11 +304,8 @@ export function CreateQuizPage() {
 
   if (published) {
     return (
-      <div className="min-h-screen bg-[#f5f6f8] flex flex-col">
-        <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "My Courses" }, { label: "Create Quiz" }]} instituteName="SOMDA INSTITUTE OF PROFESSIONAL STUDIES" showAvatar />
-        <div className="flex-1 flex gap-6 px-6 py-6 max-w-[1200px] mx-auto w-full">
-          <InstructorSidebar />
-          <main className="flex-1 flex items-center justify-center">
+      <Shell>
+        <main className="flex-1 flex items-center justify-center">
             <div className="bg-white border border-gray-200 p-10 text-center max-w-md w-full">
               <div className="w-16 h-16 bg-[rgba(212,165,116,0.1)] flex items-center justify-center mx-auto mb-5">
                 <Check size={32} className="text-[#d4a574]" strokeWidth={2.5} />
@@ -324,19 +338,13 @@ export function CreateQuizPage() {
               </div>
             </div>
           </main>
-        </div>
-      </div>
+        </Shell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f6f8] flex flex-col">
-      <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "My Courses", href: "/instructor/courses" }, { label: "Create Quiz" }]} instituteName="SOMDA INSTITUTE OF PROFESSIONAL STUDIES" showAvatar />
-
-      <div className="flex-1 flex gap-6 px-6 py-6 max-w-[1200px] mx-auto w-full">
-        <InstructorSidebar />
-
-        <main className="flex-1 min-w-0">
+    <Shell>
+      <main className="flex-1 min-w-0">
           <div className="bg-white border border-gray-200 p-8 max-w-2xl mx-auto">
             <div className="mb-6">
               <button onClick={() => navigate(-1)} className="flex items-center gap-2 mb-4 transition-colors hover:text-[#0a1628] text-[#6c6c6c]" style={{ ...S, fontSize: "13px" }}>
@@ -824,13 +832,6 @@ export function CreateQuizPage() {
             </div>
           </div>
         </main>
-      </div>
-
-      <footer className="py-4 border-t border-gray-200 bg-white px-6 flex items-center justify-between mt-4">
-        <p style={{ ...S, fontSize: "13px", color: "#0a1628" }}>
-          Copyright 2025 <span className="text-[#d4a574]">© LMS.</span> All right reserved.
-        </p>
-      </footer>
-    </div>
+      </Shell>
   );
 }

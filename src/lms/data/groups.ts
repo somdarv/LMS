@@ -120,6 +120,40 @@ export const GROUPS: Group[] = [
       { studentId: 10, name: "Harriet Ofori",  initials: "HO", joinedAt: "2026-02-11T09:00:00Z" },
     ],
   },
+  // FA L2 — Weekend cohort, Kojo is leader
+  {
+    id: "grp-2-we-001",
+    courseId: 2,
+    track: "Weekend",
+    name: "Group Delta",
+    maxSize: 4,
+    status: "open",
+    createdBy: "instructor",
+    createdAt: "2026-02-05T10:00:00Z",
+    leaderId: 7,
+    members: [
+      { studentId: 7,  name: "Kojo Manu",      initials: "KM", joinedAt: "2026-02-05T10:00:00Z" },
+      { studentId: 11, name: "Yaa Asantewaa",   initials: "YA", joinedAt: "2026-02-05T10:00:00Z" },
+      { studentId: 12, name: "Nana Akufo",      initials: "NA", joinedAt: "2026-02-06T09:00:00Z" },
+    ],
+  },
+  // MA L1 — Weekday cohort, Kojo is leader
+  {
+    id: "grp-3-wd-001",
+    courseId: 3,
+    track: "Weekday",
+    name: "Team Alpha",
+    maxSize: 4,
+    status: "open",
+    createdBy: "instructor",
+    createdAt: "2026-02-08T10:00:00Z",
+    leaderId: 7,
+    members: [
+      { studentId: 7,  name: "Kojo Manu",      initials: "KM", joinedAt: "2026-02-08T10:00:00Z" },
+      { studentId: 8,  name: "Esi Amponsah",   initials: "EA", joinedAt: "2026-02-08T10:00:00Z" },
+      { studentId: 9,  name: "Kwabena Frimpong", initials: "KF", joinedAt: "2026-02-08T11:00:00Z" },
+    ],
+  },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

@@ -4,6 +4,7 @@ import {
   BookOpen,
   ClipboardList,
   HelpCircle,
+  Megaphone,
   MessageCircle,
   Info,
   ChevronLeft,
@@ -14,7 +15,7 @@ import {
   Users2,
 } from "lucide-react";
 
-export type CourseTab = "overview" | "content" | "assignments" | "quizzes" | "grades" | "communications" | "students" | "groups";
+export type CourseTab = "overview" | "content" | "assignments" | "quizzes" | "grades" | "announcements" | "discussions" | "students" | "groups";
 
 interface CourseSidebarProps {
   activeTab: CourseTab;
@@ -39,7 +40,8 @@ export function CourseSidebar({ activeTab, setActiveTab, courseName, courseCode,
     { id: "grades", label: "Grades", icon: GraduationCap },
     { id: "students", label: "Students", icon: Users },
     { id: "groups", label: "Groups", icon: Users2 },
-    { id: "communications", label: "Communications", icon: MessageCircle },
+    { id: "announcements", label: "Announcements", icon: Megaphone },
+    { id: "discussions", label: "Discussions", icon: MessageCircle },
   ].filter(item => !hideItems.includes(item.id as CourseTab));
 
   return (

@@ -208,7 +208,7 @@ const assignments: Assignment[] = [
   },
   // Course 1: FA L1 — Group Case Study (group assignment, instructor-assigned, resubmit allowed)
   {
-    id: 401, title: "Group Case Study: Balance Sheet Analysis", courseId: 1, course: "Financial Accounting Level 1 - Weekend", courseCode: "FA L1",
+    id: 401, title: "Group Assignment: Balance Sheet Analysis", courseId: 1, course: "Financial Accounting Level 1 - Weekend", courseCode: "FA L1",
     description: "Analyse and reconstruct a balance sheet from a given trial balance, with group commentary.",
     instructions: "Working as a group, prepare a classified balance sheet for Dansoman Trading Co. from the trial balance provided. Include analysis of liquidity ratios, working capital, and solvency indicators.\n\nSubmit one file per group (PDF or DOCX). All group members will receive the same grade.",
     dueDate: "Apr 4, 2026", dueTime: "23:59", maxPoints: 40, submissionType: "file", deliveryFormat: "instructions", assignmentType: "case_study",
@@ -250,7 +250,7 @@ const assignments: Assignment[] = [
   },
   // Course 2: FA L2 — Group Assignment (instructor-assigned)
   {
-    id: 402, title: "Consolidated Financial Statements Group Project", courseId: 2, course: "Financial Accounting Level 2 - Weekend", courseCode: "FA L2",
+    id: 402, title: "Group Assignment: Consolidated Financial Statements", courseId: 2, course: "Financial Accounting Level 2 - Weekend", courseCode: "FA L2",
     description: "Work with your group to prepare consolidated financial statements for a parent-subsidiary scenario.",
     instructions: "Working as a group, prepare consolidated financial statements for the Accra Holdings Group. Include:\n\n1. Consolidated Statement of Financial Position\n2. Consolidated Income Statement\n3. Goodwill calculation and impairment review\n4. Elimination of inter-company transactions\n\nSubmit one file per group (PDF or DOCX). All group members receive the same grade.",
     dueDate: "Apr 10, 2026", dueTime: "23:59", maxPoints: 60, submissionType: "file", deliveryFormat: "instructions", assignmentType: "case_study",
@@ -266,7 +266,7 @@ const assignments: Assignment[] = [
   },
   // Course 3: MA L1 — Group Assignment (self-enroll)
   {
-    id: 403, title: "Variance Analysis Group Report", courseId: 3, course: "Management Accounting", courseCode: "MA L1",
+    id: 403, title: "Group Assignment: Variance Analysis Report", courseId: 3, course: "Management Accounting", courseCode: "MA L1",
     description: "Collaborate with your group to analyse standard cost variances for a manufacturing scenario.",
     instructions: "Working as a group, analyse the standard and actual cost data for TechParts Manufacturing Ltd and prepare a comprehensive variance analysis report.\n\nCover:\n1. Material price and usage variances\n2. Labour rate and efficiency variances\n3. Fixed overhead expenditure and volume variances\n4. Recommendations for management action\n\nSubmit one file per group. All group members receive the same grade.",
     dueDate: "Apr 15, 2026", dueTime: "23:59", maxPoints: 50, submissionType: "file", deliveryFormat: "instructions", assignmentType: "case_study",
@@ -465,7 +465,7 @@ export function StudentAssignmentsPage() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#ededf0] sticky top-0 bg-white z-10">
               <div className="flex-1 min-w-0 pr-4">
                 <p style={{ fontFamily: "Inter, sans-serif", fontSize: "15px", fontWeight: 600, color: "#0a1628" }}>
-                  {selectedAssignment.groupConfig?.enabled ? `Group Assignment: ${selectedAssignment.title}` : selectedAssignment.title}
+                  {selectedAssignment.title}
                 </p>
                 <p style={{ fontFamily: "Inter, sans-serif", fontSize: "11px", color: "#8e8e96", marginTop: 2 }}>
                   {selectedAssignment.course}{selectedAssignment.week ? ` · Week ${selectedAssignment.week}` : ""}
@@ -616,7 +616,7 @@ function AssignmentRow({ a, onClick }: { a: Assignment; onClick: () => void }) {
         </div>
         <div className="flex-1 min-w-0">
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: "13px", fontWeight: 600, color: "#0a1628" }}>
-            {a.groupConfig?.enabled ? `Group Assignment: ${a.title}` : a.title}
+            {a.title}
           </p>
           <div className="flex items-center gap-3 mt-1.5">
             <span className="text-[#b0b0b5]" style={{ fontFamily: "Inter, sans-serif", fontSize: "11px" }}>{a.courseCode}</span>

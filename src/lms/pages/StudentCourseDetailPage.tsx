@@ -141,7 +141,6 @@ export function StudentCourseDetailPage() {
     courseModules.length > 0 ? [courseModules[0].id] : []
   );
   const [activeTab, setActiveTab] = useState<CourseTab>("overview");
-  const [communicationsSubTab, setCommunicationsSubTab] = useState<"announcements" | "discussions">("announcements");
   const [viewingItem, setViewingItem] = useState<{ type: string; title: string; url?: string } | null>(null);
   const [completed, setCompleted] = useState<Set<string>>(new Set());
 
@@ -589,44 +588,24 @@ export function StudentCourseDetailPage() {
           })()}
 
           {/* ════════════════════════════════════════════════════════════ */}
-          {/* TAB: Communications                                         */}
+          {/* TAB: Announcements                                          */}
           {/* ════════════════════════════════════════════════════════════ */}
-          {activeTab === "communications" && (() => {
+          {activeTab === "announcements" && (() => {
             const courseCommunications = [
               { id: 1, type: "announcement", title: "Mid-Term Exam Schedule Released", message: `The mid-term examinations for ${courseTitle} will begin on March 24, 2026. Please check your individual course calendars for exact times.`, time: "2 hours ago", urgent: true, author: course.instructor },
               { id: 2, type: "announcement", title: "Week 4 Materials Available", message: "Week 4 lecture notes and video have been uploaded.", time: "Yesterday", urgent: false, author: course.instructor },
-              { id: 3, type: "discussion", title: "Question regarding Trial Balances", message: "Can someone clarify how suspense accounts work when the trial balance doesn't match? I am stuck on question 3.", time: "5 days ago", urgent: false, author: "Kojo Manu", replies: 3 },
               { id: 4, type: "announcement", title: "Assignment Deadline Extended", message: "The Case Study assignment has been extended to March 15. Please ensure you submit by the new deadline.", time: "Last week", urgent: false, author: course.instructor },
-              { id: 5, type: "discussion", title: "Study group for upcoming quiz", message: "Anyone want to form a study group for the weekend cohort? We can meet via Zoom on Friday evenings.", time: "Last week", urgent: false, author: "Sarah Osei", replies: 8 },
             ];
 
-            const announcementItems = courseCommunications.filter((c) => c.type === "announcement");
-            const discussionItems = courseCommunications.filter((c) => c.type === "discussion");
-            const nonUrgentAnnouncements = announcementItems.filter((c) => !c.urgent);
+            const urgentItems = courseCommunications.filter((c) => c.urgent);
+            const nonUrgentItems = courseCommunications.filter((c) => !c.urgent);
 
             return (
               <div className="flex flex-col gap-6">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setCommunicationsSubTab("announcements")}
-                    className={`px-3 py-1.5 rounded-lg border transition-colors ${communicationsSubTab === "announcements" ? "bg-[#0a1628] border-[#0a1628] text-white" : "bg-white border-gray-200 text-[#6c6c6c] hover:bg-gray-50"}`}
-                    style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 700 }}
-                  >
-                    Announcements
-                  </button>
-                  <button
-                    onClick={() => setCommunicationsSubTab("discussions")}
-                    className={`px-3 py-1.5 rounded-lg border transition-colors ${communicationsSubTab === "discussions" ? "bg-[#0a1628] border-[#0a1628] text-white" : "bg-white border-gray-200 text-[#6c6c6c] hover:bg-gray-50"}`}
-                    style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 700 }}
-                  >
-                    Discussions
-                  </button>
-                </div>
-
-                {/* Urgent Announcements Banner (similar to dashboard) */}
-                {communicationsSubTab === "announcements" && announcementItems.filter(c => c.urgent).length > 0 && (
+                {/* Urgent Announcements Banner */}
+                {urgentItems.length > 0 && (
                   <div className="flex flex-col gap-3">
-                    {announcementItems.filter(c => c.urgent).map(c => (
+                    {urgentItems.map(c => (
                       <div key={`urgent-${c.id}`} className="bg-[rgba(212,165,116,0.1)] border border-[rgba(212,165,116,0.3)] rounded-xl px-5 py-4 flex items-start gap-4">
                         <div className="w-10 h-10 rounded-full bg-[#d4a574] flex items-center justify-center flex-shrink-0 mt-0.5">
                           <Bell size={18} className="text-white" />
@@ -648,27 +627,12 @@ export function StudentCourseDetailPage() {
                 )}
 
                 <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <div className="flex items-center justify-between mb-5">
-                    <h2 style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: "16px", color: "#0a1628" }}>
-                      {communicationsSubTab === "announcements" ? "Announcements" : "Discussions"}
-                    </h2>
-                    {communicationsSubTab === "discussions" && (
-                      <div className="flex items-center gap-2">
-                        <button className="px-3 py-1.5 rounded-lg border border-gray-200 text-[#0a1628] hover:bg-gray-50 transition-colors" style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 500 }}>
-                          Filter: All
-                        </button>
-                        <button className="px-3 py-1.5 rounded-lg bg-[#0a1628] text-white hover:bg-[#0a1628]/90 transition-colors" style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 500 }}>
-                          New Discussion
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  
+                  <h2 style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: "16px", color: "#0a1628", marginBottom: 20 }}>Announcements</h2>
                   <div className="flex flex-col gap-3">
-                    {(communicationsSubTab === "announcements" ? nonUrgentAnnouncements : discussionItems).map((item) => (
+                    {nonUrgentItems.map((item) => (
                       <div key={item.id} className="flex items-start gap-4 p-4 rounded-xl bg-[#f8f8f9] hover:bg-[#f2f2f4] transition-colors cursor-pointer border border-transparent hover:border-gray-200">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${item.type === 'announcement' ? 'bg-[rgba(212,165,116,0.15)]' : 'bg-gray-200'}`}>
-                          {item.type === 'announcement' ? <Bell size={16} className="text-[#d4a574]" /> : <MessageCircle size={16} className="text-gray-600" />}
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-[rgba(212,165,116,0.15)]">
+                          <Bell size={16} className="text-[#d4a574]" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1.5">
@@ -679,13 +643,63 @@ export function StudentCourseDetailPage() {
                             {item.message}
                           </p>
                           <div className="flex items-center gap-3">
-                            <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${item.type === 'announcement' ? 'bg-[rgba(212,165,116,0.15)] text-[#d4a574]' : 'bg-gray-200 text-gray-700'}`}>
-                              {item.type}
-                            </span>
+                            <span className="inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[rgba(212,165,116,0.15)] text-[#d4a574]">announcement</span>
                             <span className="flex items-center gap-1.5" style={{ fontFamily: "Inter, sans-serif", fontSize: "11px", color: "#8e8e96", fontWeight: 500 }}>
                               <User size={12} /> {item.author === "Kojo Manu" ? "You" : item.author}
                             </span>
-                            {item.type === 'discussion' && item.replies !== undefined && (
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ════════════════════════════════════════════════════════════ */}
+          {/* TAB: Discussions                                            */}
+          {/* ════════════════════════════════════════════════════════════ */}
+          {activeTab === "discussions" && (() => {
+            const discussionItems = [
+              { id: 3, title: "Question regarding Trial Balances", message: "Can someone clarify how suspense accounts work when the trial balance doesn't match? I am stuck on question 3.", time: "5 days ago", author: "Kojo Manu", replies: 3 },
+              { id: 5, title: "Study group for upcoming quiz", message: "Anyone want to form a study group for the weekend cohort? We can meet via Zoom on Friday evenings.", time: "Last week", author: "Sarah Osei", replies: 8 },
+            ];
+
+            return (
+              <div className="flex flex-col gap-6">
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-5">
+                    <h2 style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: "16px", color: "#0a1628" }}>Discussions</h2>
+                    <div className="flex items-center gap-2">
+                      <button className="px-3 py-1.5 rounded-lg border border-gray-200 text-[#0a1628] hover:bg-gray-50 transition-colors" style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 500 }}>
+                        Filter: All
+                      </button>
+                      <button className="px-3 py-1.5 rounded-lg bg-[#0a1628] text-white hover:bg-[#0a1628]/90 transition-colors" style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 500 }}>
+                        New Discussion
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    {discussionItems.map((item) => (
+                      <div key={item.id} className="flex items-start gap-4 p-4 rounded-xl bg-[#f8f8f9] hover:bg-[#f2f2f4] transition-colors cursor-pointer border border-transparent hover:border-gray-200">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-gray-200">
+                          <MessageCircle size={16} className="text-gray-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <p style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 600, color: "#0a1628" }} className="truncate pr-4">{item.title}</p>
+                            <span style={{ fontFamily: "Inter, sans-serif", fontSize: "11px", color: "#8e8e96", whiteSpace: "nowrap" }}>{item.time}</span>
+                          </div>
+                          <p style={{ fontFamily: "Inter, sans-serif", fontSize: "13px", color: "#6c6c6c", lineHeight: 1.5, marginBottom: 8, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                            {item.message}
+                          </p>
+                          <div className="flex items-center gap-3">
+                            <span className="inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-gray-200 text-gray-700">discussion</span>
+                            <span className="flex items-center gap-1.5" style={{ fontFamily: "Inter, sans-serif", fontSize: "11px", color: "#8e8e96", fontWeight: 500 }}>
+                              <User size={12} /> {item.author === "Kojo Manu" ? "You" : item.author}
+                            </span>
+                            {item.replies !== undefined && (
                               <span className="flex items-center gap-1.5" style={{ fontFamily: "Inter, sans-serif", fontSize: "11px", color: "#8e8e96", fontWeight: 500 }}>
                                 <MessageCircle size={12} /> {item.replies} {item.replies === 1 ? 'reply' : 'replies'}
                               </span>

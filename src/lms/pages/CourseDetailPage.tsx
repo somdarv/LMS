@@ -71,11 +71,11 @@ export function CourseDetailPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const track = searchParams.get("track") || "All";
+  const initialTab = (searchParams.get("tab") as CourseTab) || "overview";
   const courseId = Number(id);
   const course = COURSES.find((c) => c.id === courseId) ?? COURSES[0];
   
-  const [activeTab, setActiveTab] = useState<CourseTab>("overview");
-  const [communicationsSubTab, setCommunicationsSubTab] = useState<"announcements" | "discussions">("announcements");
+  const [activeTab, setActiveTab] = useState<CourseTab>(initialTab);
   const [openModules, setOpenModules] = useState<number[]>([1]);
 
   const toggleModule = (moduleId: number) => {
@@ -141,7 +141,7 @@ export function CourseDetailPage() {
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={() => navigate(`/instructor/upload-content?courseId=${course.id}`)}
+                  onClick={() => navigate(`/instructor/courses/${course.id}/upload-content`)}
                   className="flex items-center gap-1.5 px-3 h-8 rounded bg-[#0a1628] text-white hover:bg-[#0d1e35] transition-colors"
                   style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 600 }}
                 >
@@ -243,7 +243,7 @@ export function CourseDetailPage() {
               <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                 <h2 style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: "15px", color: "#0a1628" }}>Curriculum</h2>
                 <button
-                  onClick={() => navigate(`/instructor/upload-content?courseId=${course.id}`)}
+                  onClick={() => navigate(`/instructor/courses/${course.id}/upload-content`)}
                   className="flex items-center gap-1.5 text-[#d4a574] hover:underline"
                   style={{ fontFamily: "Inter, sans-serif", fontSize: "13px", fontWeight: 600 }}
                 >
@@ -301,7 +301,7 @@ export function CourseDetailPage() {
               <div className="flex items-center justify-between">
                 <h2 style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: "15px", color: "#0a1628" }}>Assignments</h2>
                 <button
-                  onClick={() => navigate(`/instructor/create-assignment?courseId=${course.id}`)}
+                  onClick={() => navigate(`/instructor/courses/${course.id}/create-assignment`)}
                   className="flex items-center gap-1.5 px-3 h-8 rounded bg-[#0a1628] text-white hover:bg-[#0d1e35] transition-colors"
                   style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 600 }}
                 >
@@ -358,7 +358,7 @@ export function CourseDetailPage() {
               <div className="flex items-center justify-between">
                 <h2 style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: "15px", color: "#0a1628" }}>Quizzes</h2>
                 <button
-                  onClick={() => navigate(`/instructor/create-quiz?courseId=${course.id}`)}
+                  onClick={() => navigate(`/instructor/courses/${course.id}/create-quiz`)}
                   className="flex items-center gap-1.5 px-3 h-8 rounded bg-[#0a1628] text-white hover:bg-[#0d1e35] transition-colors"
                   style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 600 }}
                 >
@@ -556,52 +556,61 @@ export function CourseDetailPage() {
           )}
 
           {/* ════════════════════════════════════════════════════════════ */}
-          {/* TAB: Communications                                         */}
+          {/* TAB: Announcements                                          */}
           {/* ════════════════════════════════════════════════════════════ */}
-          {activeTab === "communications" && (
+          {activeTab === "announcements" && (
             <div className="flex flex-col gap-5">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setCommunicationsSubTab("announcements")}
-                  className={`px-3 py-1.5 rounded-lg border transition-colors ${communicationsSubTab === "announcements" ? "bg-[#0a1628] border-[#0a1628] text-white" : "bg-white border-gray-200 text-[#6c6c6c] hover:bg-gray-50"}`}
-                  style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 700 }}
-                >
-                  Announcements
-                </button>
-                <button
-                  onClick={() => setCommunicationsSubTab("discussions")}
-                  className={`px-3 py-1.5 rounded-lg border transition-colors ${communicationsSubTab === "discussions" ? "bg-[#0a1628] border-[#0a1628] text-white" : "bg-white border-gray-200 text-[#6c6c6c] hover:bg-gray-50"}`}
-                  style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 700 }}
-                >
-                  Discussions
-                </button>
-              </div>
               <div className="flex items-center justify-between">
-                <h2 style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: "15px", color: "#0a1628" }}>
-                  {communicationsSubTab === "announcements" ? "Announcements" : "Discussions"}
-                </h2>
-                {communicationsSubTab === "announcements" && (
-                  <button
-                    onClick={() => navigate("/instructor/communications")}
-                    className="flex items-center gap-1.5 px-3 h-8 rounded bg-[#0a1628] text-white hover:bg-[#0d1e35] transition-colors"
-                    style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 600 }}
-                  >
-                    <Plus size={14} /> New Announcement
-                  </button>
-                )}
+                <h2 style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: "15px", color: "#0a1628" }}>Announcements</h2>
+                <button
+                  onClick={() => navigate("/instructor/communications")}
+                  className="flex items-center gap-1.5 px-3 h-8 rounded bg-[#0a1628] text-white hover:bg-[#0d1e35] transition-colors"
+                  style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 600 }}
+                >
+                  <Plus size={14} /> New Announcement
+                </button>
               </div>
 
-              {(communicationsSubTab === "announcements"
-                ? INSTRUCTOR_MOCK_COMMUNICATIONS.filter((c) => c.type === "announcement")
-                : INSTRUCTOR_MOCK_COMMUNICATIONS.filter((c) => c.type === "discussion")
-              ).map((c) => (
+              {INSTRUCTOR_MOCK_COMMUNICATIONS.filter((c) => c.type === "announcement").map((c) => (
                 <div
                   key={c.id}
                   className={`bg-white rounded-xl border ${c.urgent ? "border-[#d4a574]" : "border-gray-200"} p-5 flex gap-4 relative overflow-hidden`}
                 >
                   {c.urgent && <div className="absolute top-0 left-0 bottom-0 w-1 bg-[#d4a574]" />}
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${c.type === "announcement" ? "bg-[rgba(212,165,116,0.15)] text-[#d4a574]" : "bg-blue-50 text-blue-500"}`}>
-                    {c.type === "announcement" ? <AlertTriangle size={18} /> : <MessageCircle size={18} />}
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-[rgba(212,165,116,0.15)] text-[#d4a574]">
+                    <AlertTriangle size={18} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start mb-1">
+                      <p style={{ fontFamily: "Inter, sans-serif", fontSize: "15px", fontWeight: 700, color: "#0a1628" }}>{c.title}</p>
+                      <span style={{ fontFamily: "Inter, sans-serif", fontSize: "11px", color: "#8e8e96" }}>{c.time}</span>
+                    </div>
+                    <p style={{ fontFamily: "Inter, sans-serif", fontSize: "13px", color: "#4a4a4a", lineHeight: 1.5, marginBottom: 12 }}>{c.message}</p>
+                    <span className="inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-[#6c6c6c]">
+                      announcement
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ════════════════════════════════════════════════════════════ */}
+          {/* TAB: Discussions                                            */}
+          {/* ════════════════════════════════════════════════════════════ */}
+          {activeTab === "discussions" && (
+            <div className="flex flex-col gap-5">
+              <div className="flex items-center justify-between">
+                <h2 style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: "15px", color: "#0a1628" }}>Discussions</h2>
+              </div>
+
+              {INSTRUCTOR_MOCK_COMMUNICATIONS.filter((c) => c.type === "discussion").map((c) => (
+                <div
+                  key={c.id}
+                  className="bg-white rounded-xl border border-gray-200 p-5 flex gap-4 relative overflow-hidden"
+                >
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-blue-50 text-blue-500">
+                    <MessageCircle size={18} />
                   </div>
                   <div className="flex-1">
                     <div className="flex justify-between items-start mb-1">
@@ -611,7 +620,7 @@ export function CourseDetailPage() {
                     <p style={{ fontFamily: "Inter, sans-serif", fontSize: "13px", color: "#4a4a4a", lineHeight: 1.5, marginBottom: 12 }}>{c.message}</p>
                     <div className="flex items-center gap-3">
                       <span className="inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-[#6c6c6c]">
-                        {c.type}
+                        discussion
                       </span>
                       {c.author && <span style={{ fontFamily: "Inter, sans-serif", fontSize: "11px", color: "#6c6c6c" }}>By {c.author}</span>}
                       {c.replies !== undefined && (

@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useState, useRef, type ReactNode } from "react";
+import { useNavigate, useSearchParams, useParams } from "react-router";
 import {
   Upload, Video, FileText, Link2, Image, Monitor,
   ChevronRight, ChevronLeft, Check, CloudUpload, X,
@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { AlmsHeader } from "../components/AlmsHeader";
 import { InstructorSidebar } from "../components/InstructorSidebar";
+import { CoursePageShell } from "../components/CoursePageShell";
 import { COURSES } from "../data/courses";
 import { courseSelectLabel, courseTitleWithTracks } from "../lib/courseLabels";
 
@@ -65,7 +66,22 @@ function StepIndicator({ current, steps }: { current: number; steps: string[] })
 export function UploadContentPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const preselectedCourseId = searchParams.get("courseId");
+  const { id: routeCourseId } = useParams<{ id: string }>();
+  const preselectedCourseId = routeCourseId || searchParams.get("courseId");
+  const isCourseScoped = !!routeCourseId;
+
+  const Shell = ({ children }: { children: ReactNode }) =>
+    isCourseScoped ? (
+      <CoursePageShell activeTab="content" breadcrumbSuffix="Upload Content">{children}</CoursePageShell>
+    ) : (
+      <div className="min-h-screen bg-[#f5f6f8] flex flex-col">
+        <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "My Courses", href: "/instructor/courses" }, { label: "Upload Content" }]} instituteName="SOMDA INSTITUTE OF PROFESSIONAL STUDIES" showAvatar />
+        <div className="flex-1 flex gap-6 px-6 py-6 max-w-[1200px] mx-auto w-full">
+          <InstructorSidebar />
+          {children}
+        </div>
+      </div>
+    );
 
   const [step, setStep]                   = useState(0);
   const [contentType, setContentType]     = useState("");
@@ -111,10 +127,7 @@ export function UploadContentPage() {
 
   if (published) {
     return (
-      <div className="min-h-screen bg-[#f5f6f8] flex flex-col">
-        <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "My Courses" }, { label: "Upload Content" }]} instituteName="SOMDA INSTITUTE OF PROFESSIONAL STUDIES" showAvatar />
-        <div className="flex-1 flex gap-6 px-6 py-6 max-w-[1200px] mx-auto w-full">
-          <InstructorSidebar />
+      <Shell>
           <main className="flex-1 flex items-center justify-center">
             <div className="bg-white border border-gray-200 p-10 text-center max-w-md w-full">
               <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-5">
@@ -150,18 +163,12 @@ export function UploadContentPage() {
               </div>
             </div>
           </main>
-        </div>
-      </div>
+      </Shell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f6f8] flex flex-col">
-      <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "My Courses", href: "/instructor/courses" }, { label: "Upload Content" }]} instituteName="SOMDA INSTITUTE OF PROFESSIONAL STUDIES" showAvatar />
-
-      <div className="flex-1 flex gap-6 px-6 py-6 max-w-[1200px] mx-auto w-full">
-        <InstructorSidebar />
-
+    <Shell>
         <main className="flex-1 min-w-0">
           <div className="bg-white border border-gray-200 p-8 max-w-2xl mx-auto">
             <div className="mb-6">
@@ -538,13 +545,6 @@ export function UploadContentPage() {
             </div>
           </div>
         </main>
-      </div>
-
-      <footer className="py-4 border-t border-gray-200 bg-white px-6 flex items-center justify-between mt-4">
-        <p style={{ fontFamily: "Inter, sans-serif", fontSize: "13px", color: "#0a1628" }}>
-          Copyright 2025 <span className="text-[#d4a574]">© LMS.</span> All right reserved.
-        </p>
-      </footer>
-    </div>
+    </Shell>
   );
 }

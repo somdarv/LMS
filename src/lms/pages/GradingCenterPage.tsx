@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useParams, useNavigate } from "react-router";
 import {
   ArrowLeft, ChevronRight, Check, X, Send, Download,
@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { AlmsHeader } from "../components/AlmsHeader";
 import { InstructorSidebar } from "../components/InstructorSidebar";
+import { CoursePageShell } from "../components/CoursePageShell";
 import {
   GRADING_DATA, autoScore,
   type Submission, type AssignmentGrading, type SubStatus, type StudentAnswer,
@@ -581,8 +582,22 @@ function AutoGrader({
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export function GradingCenterPage() {
-  const { assignmentId } = useParams<{ assignmentId: string }>();
+  const { assignmentId, id: routeCourseId } = useParams<{ assignmentId: string; id: string }>();
   const navigate = useNavigate();
+  const isCourseScoped = !!routeCourseId;
+
+  const Shell = ({ children }: { children: ReactNode }) =>
+    isCourseScoped ? (
+      <CoursePageShell activeTab="grades" breadcrumbSuffix="Grade">{children}</CoursePageShell>
+    ) : (
+      <div className="min-h-screen bg-[#f5f6f8] flex flex-col">
+        <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "Assignments" }, { label: "Grade" }]} instituteName="SOMDA INSTITUTE OF PROFESSIONAL STUDIES" showAvatar />
+        <div className="flex-1 flex gap-6 px-6 py-6 max-w-[1200px] mx-auto w-full">
+          <InstructorSidebar />
+          {children}
+        </div>
+      </div>
+    );
 
   const [published, setPublished] = useState(false);
 
@@ -652,17 +667,12 @@ export function GradingCenterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f6f8] flex flex-col">
-      <AlmsHeader breadcrumb={[{ label: "Home" }, { label: "Assignments" }, { label: "Grade" }]} instituteName="SOMDA INSTITUTE OF PROFESSIONAL STUDIES" showAvatar />
-
-      <div className="flex-1 flex gap-6 px-6 py-6 max-w-[1200px] mx-auto w-full">
-        <InstructorSidebar />
-
-        <main className="flex-1 min-w-0 flex flex-col gap-4">
-          {/* Page header */}
-          <div className="bg-[#0a1628] px-6 py-4">
-            <button onClick={() => navigate("/instructor/assignments")}
-              className="flex items-center gap-1.5 mb-3 hover:opacity-80 transition-opacity"
+    <Shell>
+      <main className="flex-1 min-w-0 flex flex-col gap-4">
+        {/* Page header */}
+        <div className="bg-[#0a1628] px-6 py-4">
+          <button onClick={() => navigate("/instructor/assignments")}
+            className="flex items-center gap-1.5 mb-3 hover:opacity-80 transition-opacity"
               style={{ ...S, fontSize: "11px", color: "#d4a574" }}>
               <ArrowLeft size={12} /> Back to Assignments
             </button>
@@ -741,16 +751,6 @@ export function GradingCenterPage() {
             )}
           </div>
         </main>
-      </div>
-
-      <footer className="py-4 border-t border-gray-200 bg-white px-6 flex items-center justify-between mt-4">
-        <p style={{ ...S, fontSize: "13px", color: "#0a1628" }}>Copyright 2025 <span className="text-[#d4a574]">© LMS.</span> All right reserved.</p>
-        <div className="flex items-center gap-3" style={{ ...S, fontSize: "13px" }}>
-          <a href="#" className="text-[#0a1628] hover:text-[#d4a574]">Terms & Conditions</a>
-          <span className="text-[#6c6c6c]">\</span>
-          <a href="#" className="text-[#0a1628] hover:text-[#d4a574]">Privacy Policy</a>
-        </div>
-      </footer>
-    </div>
+      </Shell>
   );
 }
