@@ -16,18 +16,44 @@ export type Sitting = {
   endDate: string;
 };
 
+export type PeriodType = "time-of-day" | "day-of-week" | "quarter" | "half-year" | "month";
+
+export const PERIOD_TYPE_LABELS: Record<PeriodType, string> = {
+  "time-of-day": "Time of Day",
+  "day-of-week": "Day of Week",
+  "quarter":     "Quarter of Year",
+  "half-year":   "Half of Year",
+  "month":       "Month of Year",
+};
+
+export const PERIOD_UNITS: Record<PeriodType, string[]> = {
+  "time-of-day": ["Morning", "Afternoon", "Evening"],
+  "day-of-week": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+  "quarter":     ["Q1", "Q2", "Q3", "Q4"],
+  "half-year":   ["H1", "H2"],
+  "month":       ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+};
+
 export type Cohort = {
   id: string;
-  name: "Weekday" | "Weekend" | "Both";
-  description: string;
+  name: string;              // admin-defined label, e.g. "Weekday Morning", "Q1 2026"
+  periodType: PeriodType;    // what kind of period this cohort represents
+  periods: string[];         // selected units, e.g. ["Mon","Tue","Wed"] or ["Morning"]
+  description?: string;
 };
 
 export type EnrollmentLinkConfig = {
   id: string;
   token: string;
-  allowedPrograms: string[]; // Program IDs
-  allowedSittings: string[]; // Sitting IDs
-  allowedCohorts: string[];  // Cohort IDs
+  mode: "general" | "single";           // general = many students; single = bio pre-filled
+  allowedPrograms: string[];             // Program IDs
+  allowedCourses: number[];              // Course IDs (subset within program)
+  allowedSittings: string[];             // Sitting IDs
+  allowedCohorts: string[];              // Cohort IDs
+  // Only populated for mode === "single"
+  studentName?: string;
+  studentEmail?: string;
+  studentPhone?: string;
   expiresAt?: string;
 };
 
@@ -70,6 +96,9 @@ type LMSContextType = {
   programs: Program[];
   sittings: Sitting[];
   cohorts: Cohort[];
+  addCohort: (cohort: Omit<Cohort, "id">) => Cohort;
+  updateCohort: (id: string, patch: Partial<Omit<Cohort, "id">>) => void;
+  deleteCohort: (id: string) => void;
   enrollmentLinks: EnrollmentLinkConfig[];
   generateEnrollmentLink: (config: Omit<EnrollmentLinkConfig, "id" | "token">) => EnrollmentLinkConfig;
   modules: LMSModule[];
@@ -106,9 +135,11 @@ const SEED_SITTINGS: Sitting[] = [
 ];
 
 const SEED_COHORTS: Cohort[] = [
-  { id: "cohort-weekday", name: "Weekday", description: "Classes run from Monday to Friday." },
-  { id: "cohort-weekend", name: "Weekend", description: "Classes run on Saturdays and Sundays." },
-  { id: "cohort-both", name: "Both", description: "Access to both Weekday and Weekend schedules." },
+  { id: "cohort-weekday-am",  name: "Weekday Morning",    periodType: "day-of-week", periods: ["Mon", "Tue", "Wed", "Thu", "Fri"], description: "Classes on weekdays, morning sessions." },
+  { id: "cohort-weekend-am",  name: "Weekend Morning",    periodType: "day-of-week", periods: ["Sat", "Sun"], description: "Weekend-only morning sessions." },
+  { id: "cohort-evening",     name: "Evening Classes",    periodType: "time-of-day", periods: ["Evening"], description: "After-hours sessions for working professionals." },
+  { id: "cohort-q1-2026",     name: "Q1 2026",            periodType: "quarter",     periods: ["Q1"], description: "January – March 2026 intake." },
+  { id: "cohort-h1-2026",     name: "First Half 2026",    periodType: "half-year",   periods: ["H1"], description: "January – June 2026 intake." },
 ];
 
 function buildInitialModules(): LMSModule[] {
@@ -187,11 +218,27 @@ const LMSContext = createContext<LMSContextType | null>(null);
 export function LMSProvider({ children }: { children: ReactNode }) {
   const [programs] = useState<Program[]>(SEED_PROGRAMS);
   const [sittings] = useState<Sitting[]>(SEED_SITTINGS);
-  const [cohorts] = useState<Cohort[]>(SEED_COHORTS);
+  const [cohorts, setCohorts] = useState<Cohort[]>(SEED_COHORTS);
   const [enrollmentLinks, setEnrollmentLinks] = useState<EnrollmentLinkConfig[]>([]);
 
   const [modules, setModules] = useState<LMSModule[]>(() => buildInitialModules());
   const [sessions, setSessions] = useState<ClassSession[]>(() => buildInitialSessions());
+
+  // ── Cohort CRUD ────────────────────────────────────────────────────────────
+
+  const addCohort = (cohort: Omit<Cohort, "id">): Cohort => {
+    const newCohort: Cohort = { ...cohort, id: uid("cohort") };
+    setCohorts((prev) => [...prev, newCohort]);
+    return newCohort;
+  };
+
+  const updateCohort = (id: string, patch: Partial<Omit<Cohort, "id">>) => {
+    setCohorts((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  };
+
+  const deleteCohort = (id: string) => {
+    setCohorts((prev) => prev.filter((c) => c.id !== id));
+  };
 
   const generateEnrollmentLink = (config: Omit<EnrollmentLinkConfig, "id" | "token">) => {
     const newLink: EnrollmentLinkConfig = {
@@ -306,7 +353,8 @@ export function LMSProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<LMSContextType>(
     () => ({
-      programs, sittings, cohorts, enrollmentLinks, generateEnrollmentLink,
+      programs, sittings, cohorts, addCohort, updateCohort, deleteCohort,
+      enrollmentLinks, generateEnrollmentLink,
       modules, sessions,
       addModule, updateModule, deleteModule, reorderModule,
       addModuleItem, updateModuleItem, deleteModuleItem,

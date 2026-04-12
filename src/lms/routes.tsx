@@ -44,6 +44,11 @@ import { StudentGroupsPage } from "./pages/StudentGroupsPage";
 
 // Admin pages
 import { AdminGenerateEnrollmentPage } from "./pages/AdminGenerateEnrollmentPage";
+import { AdminDashboardPage } from "./pages/AdminDashboardPage";
+import { AdminCoursesPage } from "./pages/AdminCoursesPage";
+import { AdminCreateCoursePage } from "./pages/AdminCreateCoursePage";
+import { AdminCreateCustomCoursePage } from "./pages/AdminCreateCustomCoursePage";
+import { AdminCohortsPage } from "./pages/AdminCohortsPage";
 
 export const lmsRoutes: RouteObject[] = [
   {
@@ -82,7 +87,12 @@ export const lmsRoutes: RouteObject[] = [
       { path: "/privacy-policy",             Component: PrivacyPolicyPage },
 
       // Admin routes
-      { path: "/admin/enrollment-links",         Component: AdminGenerateEnrollmentPage },
+      { path: "/admin/dashboard",                 Component: AdminDashboardPage },
+      { path: "/admin/enrollment-links",           Component: AdminGenerateEnrollmentPage },
+      { path: "/admin/courses",                    Component: AdminCoursesPage },
+      { path: "/admin/courses/create",             Component: AdminCreateCoursePage },
+      { path: "/admin/courses/create-custom",      Component: AdminCreateCustomCoursePage },
+      { path: "/admin/cohorts",                    Component: AdminCohortsPage },
 
       // Student routes
       { path: "/student/enroll",                Component: StudentEnrollPage },

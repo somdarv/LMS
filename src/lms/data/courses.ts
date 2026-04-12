@@ -7,6 +7,7 @@ export interface Module {
 
 export interface Course {
   id: number;
+  programId: string;   // links to Program.id in LMSContext
   title: string;
   subtitle: string;
   shortCode: string;   // e.g. "FA L1" — used as the common key across all pages
@@ -32,6 +33,7 @@ export interface Course {
 export const COURSES: Course[] = [
   {
     id: 1,
+    programId: "prog-1",
     title: "Financial Accounting Level 1",
     subtitle: "Foundation-level course covering double entry, trial balance, and basic financial statements.",
     shortCode: "FA L1",
@@ -105,6 +107,7 @@ export const COURSES: Course[] = [
   },
   {
     id: 2,
+    programId: "prog-1",
     title: "Financial Accounting Level 2",
     subtitle: "Advanced financial accounting covering consolidated statements, partnerships, and complex transactions.",
     shortCode: "FA L2",
@@ -169,6 +172,7 @@ export const COURSES: Course[] = [
   },
   {
     id: 3,
+    programId: "prog-1",
     title: "Management Accounting Level 1",
     subtitle: "Cost accounting fundamentals covering budgeting, variance analysis, and management decision-making.",
     shortCode: "MA L1",
@@ -233,6 +237,7 @@ export const COURSES: Course[] = [
   },
   {
     id: 4,
+    programId: "prog-1",
     title: "Taxation Level 1",
     subtitle: "Introduction to Ghanaian tax law covering personal income tax, corporate tax, and VAT compliance.",
     shortCode: "TAX L1",
@@ -297,6 +302,7 @@ export const COURSES: Course[] = [
   },
   {
     id: 5,
+    programId: "prog-1",
     title: "Auditing & Assurance Level 1",
     subtitle: "Principles of auditing, internal controls, risk assessment, and professional ethics for auditors.",
     shortCode: "AUD L1",

@@ -2,6 +2,7 @@ import { useNavigate } from "react-router";
 import {
   LayoutDashboard,
   GraduationCap,
+  ShieldCheck,
   ArrowRight,
   Info,
 } from "lucide-react";
@@ -34,7 +35,7 @@ export function DemoLanding() {
         </div>
 
         {/* Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-xl">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full max-w-3xl">
           {/* Instructor */}
           <button
             onClick={() => navigate("/instructor/dashboard")}
@@ -68,10 +69,27 @@ export function DemoLanding() {
               Enter as Student <ArrowRight size={15} />
             </div>
           </button>
+
+          {/* Admin */}
+          <button
+            onClick={() => navigate("/admin/dashboard")}
+            className="bg-white rounded-2xl border border-gray-200 p-8 text-left hover:shadow-lg hover:border-[#d4a574] transition-all group"
+          >
+            <div className="w-12 h-12 rounded-xl bg-[#0a1628] flex items-center justify-center mb-5">
+              <ShieldCheck size={22} className="text-[#d4a574]" />
+            </div>
+            <h2 className="font-semibold text-[#0a1628] text-lg mb-1">Admin Dashboard</h2>
+            <p className="text-[#6c6c6c] text-sm mb-4" style={{ lineHeight: 1.5 }}>
+              Manage enrollments, programs, courses, and platform settings.
+            </p>
+            <div className="flex items-center gap-1 text-[#d4a574] group-hover:gap-2 transition-all text-sm font-semibold">
+              Enter as Admin <ArrowRight size={15} />
+            </div>
+          </button>
         </div>
 
         {/* Demo Disclaimer */}
-        <div className="mt-10 max-w-xl w-full bg-[rgba(212,165,116,0.08)] border border-[rgba(212,165,116,0.25)] rounded-xl px-5 py-4 flex items-start gap-3">
+        <div className="mt-10 max-w-3xl w-full bg-[rgba(212,165,116,0.08)] border border-[rgba(212,165,116,0.25)] rounded-xl px-5 py-4 flex items-start gap-3">
           <Info size={18} className="text-[#d4a574] mt-0.5 shrink-0" />
           <p className="text-[#6c6c6c] text-xs leading-relaxed">
             <span className="font-semibold text-[#0a1628]">Demo Mode.</span>{" "}
